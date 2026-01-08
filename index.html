@@ -20,6 +20,9 @@
 
 	<!-- Chart.js -->
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<!-- jsPDF -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 
     <title>farmsaat Wetterdaten</title>
@@ -387,27 +390,56 @@
 			updateChart();
 		});
 		
-		function downloadChart() {
-			const canvas = document.getElementById('yearChart'); // Use the ID 'yearChart'
+		async function downloadChart() {
+			const canvas = document.getElementById('yearChart');
 			
-			// Create a dummy canvas to fill with white background
+			// Create a dummy canvas
 			const newCanvas = document.createElement('canvas');
 			newCanvas.width = canvas.width;
 			newCanvas.height = canvas.height;
 			const ctx = newCanvas.getContext('2d');
 			
-			// Fill white background
-			ctx.fillStyle = '#FFFFFF';
-			ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+			// Load images
+			const bgImg = new Image();
+			const logoImg = new Image();
 			
-			// Draw the original chart on top
-			ctx.drawImage(canvas, 0, 0);
+			bgImg.src = 'background.png';
+			logoImg.src = 'logo.png';
 			
-			// Trigger download
-			const link = document.createElement('a');
-			link.download = 'weather-graph.jpg';
-			link.href = newCanvas.toDataURL('image/jpeg', 1.0);
-			link.click();
+			// Wait for both images to load
+			let loadedCount = 0;
+			const checkLoaded = () => {
+				loadedCount++;
+				if (loadedCount === 2) {
+					// Draw background
+					ctx.drawImage(bgImg, 0, 0, newCanvas.width, newCanvas.height);
+					
+					// Draw the chart on top
+					ctx.drawImage(canvas, 0, 0);
+					
+					// Draw logo in top-right corner
+					const logoWidth = 150;
+					const logoHeight = 75;
+					ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
+					
+					// Convert to image data
+					const imgData = newCanvas.toDataURL('image/jpeg', 1.0);
+					
+					// Create PDF with jsPDF
+					const { jsPDF } = window.jspdf;
+					const pdf = new jsPDF({
+						orientation: 'landscape',
+						unit: 'px',
+						format: [newCanvas.width, newCanvas.height]
+					});
+					
+					pdf.addImage(imgData, 'JPEG', 0, 0, newCanvas.width, newCanvas.height);
+					pdf.save('weather-graph.pdf');
+				}
+			};
+			
+			bgImg.onload = checkLoaded;
+			logoImg.onload = checkLoaded;
 		}
 
 		function buildCumulativeSeries(year, metricKey) {
@@ -509,5 +541,3 @@
 </body>
 
 </html>
-
-
