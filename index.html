@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- Leaflet CSS -->
+	<link
+	  rel="stylesheet"
+	  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+	  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+	  crossorigin=""
+	>
+
+	<!-- Leaflet JS -->
+	<script
+	  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+	  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+	  crossorigin=""
+	></script>
+
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    <title>farmsaat Wetterdaten</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			background-color: #ffffff;
+		}
+		.main-view {
+			display: flex;
+			flex-direction: column;
+			gap: 20px;
+			padding: 20px;
+			box-sizing: border-box;
+			height: auto;
+			min-height: 100vh;
+		}
+		.main-container {
+			width: 100%;
+			max-width: 1920px;
+			margin: 0 auto;
+			padding: 20px;
+			box-sizing: border-box;
+		}
+		.main-title {
+			margin: 0 0 16px 0;
+			text-align: center;
+		}
+		.sowing-section {
+			margin-bottom: 10px;
+		}
+		.sowing-title {
+			margin: 0 0 6px 0;
+		}
+		.sowing-input-row {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+		}
+		.sowing-input {
+			width: 70px;
+		}
+		.map {
+			width: 100%;
+			height: 500px;
+			margin-bottom: 20px;
+			border-radius: 8px;
+			overflow: hidden;
+		}
+		.chart-wrapper {
+			width: 70vw;
+			max-width: 70vw;
+			margin: 0 auto;
+		}
+		.year-chart {
+			width: 100%;
+			height: 100%;
+		}
+		.download-button {
+			display: block;
+			margin: 20px auto 0;
+			padding: 10px 20px;
+			font-size: 16px;
+			background-color: #7ab73e;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: background-color 0.3s;
+		}
+		.download-button:hover {
+			background-color: #4e7526;
+		}
+	</style>
+</head>
+<body>
+    <!-- Main View -->
+    <div class="main-view" id="mainView">
+        <div class="main-container">
+            <!-- Overall header -->
+            <h2 class="main-title">farmsaat Wetterdaten</h2>
+
+            <!-- Aussaatzeitpunkt + Date picker -->
+            <div class="sowing-section">
+                <h3 class="sowing-title">Aussaatzeitpunkt</h3>
+                <div class="sowing-input-row">
+                    <label for="dayInput">Tag</label>
+                    <input type="number" id="dayInput" min="1" max="31" value="1" class="sowing-input" />
+                    <label for="monthInput">Monat</label>
+                    <input type="number" id="monthInput" min="1" max="12" value="4" class="sowing-input" />
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div id="map" class="map"></div>
+
+            <!-- Line chart -->
+            <div class="chart-wrapper">
+                <canvas id="yearChart" class="year-chart"></canvas>
+            </div>
+            
+            <button class="download-button" onclick="downloadChart()">Diagramm herunterladen</button>
+        </div>
+    </div>
+
+
+    <script>
+        const transformedData = {
+            2024: null,
+            2025: null,
+            2026: null
+        };
+		
+		let map;
+		let markersLayer;
+		let selectedLocationId = null;
+		let yearChart = null;
+		
+		const locations = [];
+		
+		async function loadLocationsFromRepo() {
+			try {
+				const response = await fetch('sdo.csv');
+				
+				if (!response.ok) {
+					throw new Error('Locations CSV file not found');
+				}
+				
+				const csvText = await response.text();
+				const lines = csvText.trim().split('\n');
+				const rows = lines.slice(1); // Skip header
+				
+				locations = rows.map(line => {
+					const parts = line.split(',');
+					const id = parts[0].replace(/"/g, '').trim();
+					const name = parts[1].replace(/"/g, '').trim();
+					const lonStr = parts[2].replace(/"/g, '').replace(',', '.').trim();
+					const latStr = parts[3].replace(/"/g, '').replace(',', '.').trim();
+					
+					return {
+						id: id,
+						name: name,
+						lat: parseFloat(latStr),
+						lon: parseFloat(lonStr)
+					};
+				});
+				
+				console.log('Loaded ' + locations.length + ' locations');
+				
+			} catch (error) {
+				console.error('Error loading locations:', error);
+			}
+		}
+
+        function generateDates(year) {
+			const dates = [];
+			const start = new Date(year, 3, 1); // April 1
+			const end = new Date(year, 9, 1);   // October 1
+			let current = new Date(start);
+
+			while (current <= end) {
+				const y = current.getFullYear();
+				const m = String(current.getMonth() + 1).padStart(2, '0');
+				const d = String(current.getDate()).padStart(2, '0');
+				dates.push(`${y}-${m}-${d}`);   // local YYYY-MM-DD
+				current.setDate(current.getDate() + 1);
+			}
+
+			return dates;
+		}
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+            const rows = lines.slice(1).map(line => line.split(','));
+            return rows.map(row => {
+                const obj = {};
+                headers.forEach((header, i) => {
+                    obj[header.trim().replace(/"/g, '')] = row[i] ? row[i].trim().replace(/"/g, '') : '';
+                });
+                return obj;
+            }).filter(row => row.Produkt_Code && row.SDO_ID && row.Zeitstempel && row.Wert !== undefined);
+        }
+
+        function transformData(year, csvText) {
+            const rows = parseCSV(csvText);
+            const dataMap = new Map();
+            rows.forEach(row => {
+                const productCode = row.Produkt_Code;
+                const id = row.SDO_ID;
+                const date = row.Zeitstempel;
+                const wert = parseFloat(row.Wert) || 0;
+                const key = date + '-' + id;
+                if (!dataMap.has(key)) {
+                    dataMap.set(key, { max: 0, min: 0, rr: 0 });
+                }
+                const entry = dataMap.get(key);
+                if (productCode.includes('T2M_X')) {
+                    entry.max = wert;
+                } else if (productCode.includes('T2M_N')) {
+                    entry.min = wert;
+                } else if (productCode.includes('RR')) {
+                    entry.rr = wert;
+                }
+            });
+            const locations = [...new Set(rows.map(row => row.SDO_ID))];
+            const allDates = generateDates(parseInt(year));
+            const transformed = [];
+            allDates.forEach(date => {
+                locations.forEach(id => {
+                    const key = date + '-' + id;
+                    const entry = dataMap.get(key) || { max: 0, min: 0, rr: 0 };
+                    const cappedMax = Math.min(entry.max, 30);
+                    const avg = (cappedMax + entry.min) / 2;
+                    const temp = avg - 6;
+                    const waermesumme = (temp > 6) ? temp : 0;
+                    transformed.push({
+                        SDO_ID: id,
+                        Zeitstempel: date,
+                        Waermesumme: waermesumme.toFixed(1),
+                        Niederschlag: entry.rr.toFixed(1)
+                    });
+                });
+            });
+            transformed.sort((a, b) => {
+                if (a.SDO_ID !== b.SDO_ID) return a.SDO_ID - b.SDO_ID;
+                return a.Zeitstempel.localeCompare(b.Zeitstempel);
+            });
+            return transformed;
+        }
+
+		function getStartDayMonth() {
+			const dayInput = document.getElementById('dayInput');
+			const monthInput = document.getElementById('monthInput');
+			const day = Math.min(Math.max(parseInt(dayInput.value || '1', 10), 1), 31);
+			const month = Math.min(Math.max(parseInt(monthInput.value || '1', 10), 1), 12);
+			return { day, month };
+		}
+
+		function buildStartDateString(year, day, month) {
+			const mm = String(month).padStart(2, '0');
+			const dd = String(day).padStart(2, '0');
+			return `${year}-${mm}-${dd}`;
+		}
+
+		async function loadCSVFromRepo(year) {
+			try {
+				const response = await fetch(`${year}.csv`);
+				
+				if (!response.ok) {
+					throw new Error('CSV file not found');
+				}
+				
+				const csvText = await response.text();
+				const data = transformData(year, csvText);
+				transformedData[year] = data;
+				
+				updateChart();
+				
+			} catch (error) {
+				console.error('Error loading CSV for ' + year + ':', error);
+			}
+		}
+		
+		function initializeMap() {
+			// Center roughly on Germany
+			map = L.map('map').setView([51.2, 10.4], 6);
+
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 18,
+				attribution: '© OpenStreetMap contributors'
+			}).addTo(map);
+
+			markersLayer = L.layerGroup().addTo(map);
+
+			renderLocationMarkers();
+		}
+
+		function renderLocationMarkers() {
+			markersLayer.clearLayers();
+
+			locations.forEach(loc => {
+				const marker = L.circleMarker(
+					[loc.lat, loc.lon],
+					{
+						radius: 6,
+						color: '#007bff',
+						fillColor: '#007bff',
+						fillOpacity: 0.8
+					}
+				).addTo(markersLayer);
+
+				marker.bindTooltip(`${loc.name} (${loc.id})`);
+				marker.on('click', () => {
+					selectedLocationId = loc.id;
+					updateChart();
+				});
+			});
+		}
+
+		function initializeChart() {
+			const ctx = document.getElementById('yearChart').getContext('2d');
+			yearChart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: [],
+					datasets: []
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: true,
+					aspectRatio: 5 / 3,   // width / height = 4:3
+					interaction: { mode: 'index', intersect: false },
+					plugins: {
+						legend: { position: 'bottom' },
+						title: {
+							display: true,
+							text: 'Laufende Summe Wärmesumme / Niederschlag'
+						}
+					},
+					elements: {
+						// Remove dots and keep straight lines
+						point: {
+							radius: 0,
+							hoverRadius: 0
+						},
+						line: {
+							tension: 0    // 0 = straight segments
+						}
+					}
+				}
+			});
+		}
+
+
+		function hookFilterInputs() {
+			const dayInput = document.getElementById('dayInput');
+			const monthInput = document.getElementById('monthInput');
+
+			dayInput.addEventListener('change', () => updateChart());
+			monthInput.addEventListener('change', () => updateChart());
+		}
+
+		
+		// Load all CSV files when page loads
+		window.addEventListener('DOMContentLoaded', async () => {
+		    // Load location data first
+			await loadLocationsFromRepo();
+			
+			// Load CSV data first
+			await loadCSVFromRepo('2024');
+			await loadCSVFromRepo('2025');
+			await loadCSVFromRepo('2018');
+			
+			// Then initialize everything else
+			initializeMap();
+			initializeChart();
+			hookFilterInputs();
+			// Optionally pick a default location if you know one:
+			selectedLocationId = "101"; 
+			updateChart();
+		});
+		
+		function downloadChart() {
+			const canvas = document.getElementById('yearChart'); // Use the ID 'yearChart'
+			
+			// Create a dummy canvas to fill with white background
+			const newCanvas = document.createElement('canvas');
+			newCanvas.width = canvas.width;
+			newCanvas.height = canvas.height;
+			const ctx = newCanvas.getContext('2d');
+			
+			// Fill white background
+			ctx.fillStyle = '#FFFFFF';
+			ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+			
+			// Draw the original chart on top
+			ctx.drawImage(canvas, 0, 0);
+			
+			// Trigger download
+			const link = document.createElement('a');
+			link.download = 'weather-graph.jpg';
+			link.href = newCanvas.toDataURL('image/jpeg', 1.0);
+			link.click();
+		}
+
+		function buildCumulativeSeries(year, metricKey) {
+			const data = transformedData[year];
+			if (!data || !selectedLocationId) {
+				return { values: [] };
+			}
+
+			const day = parseInt(document.getElementById('dayInput').value, 10);
+			const month = parseInt(document.getElementById('monthInput').value, 10);
+
+			const startDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+			const rows = data
+				.filter(r => String(r.SDO_ID) === String(selectedLocationId) && r.Zeitstempel >= startDateStr)
+				.sort((a, b) => a.Zeitstempel.localeCompare(b.Zeitstempel));
+
+			let sum = 0;
+			const values = [];
+			rows.forEach(r => {
+				sum += parseFloat(r[metricKey]) || 0;
+				values.push(sum);
+			});
+
+			return { values };
+		}
+
+		function updateChart() {
+			if (!yearChart || !selectedLocationId) {
+				return;
+			}
+
+			const years = Object.keys(transformedData).filter(y => transformedData[y]);
+
+			// Build cumulative series for each year & metric
+			const waermeSeries = {};
+			const regenSeries = {};
+			let maxLen = 0;
+
+			years.forEach(year => {
+				const ws = buildCumulativeSeries(year, 'Waermesumme').values;
+				const rr = buildCumulativeSeries(year, 'Niederschlag').values;
+				waermeSeries[year] = ws;
+				regenSeries[year] = rr;
+				maxLen = Math.max(maxLen, ws.length, rr.length);
+			});
+
+			// X-axis: tatsächliche Datumsangaben
+			const labels = [];
+
+			if (maxLen > 0) {
+				const day = parseInt(document.getElementById('dayInput').value, 10);
+				const month = parseInt(document.getElementById('monthInput').value, 10);
+
+				// Dummy year, we only care about day+month for labeling
+				const startDate = new Date(2000, month - 1, day);
+
+				for (let i = 0; i < maxLen; i++) {
+					const d = new Date(startDate);
+					d.setDate(startDate.getDate() + i);
+
+					const dd = String(d.getDate()).padStart(2, '0');
+					const mm = String(d.getMonth() + 1).padStart(2, '0');
+
+					// label as 01.04. etc.  -> or `${dd}.${mm}.2000` if you want a year
+					labels.push(`${dd}.${mm}.`);
+				}
+			}
+
+
+			const datasets = [];
+			const waermeColors = ['#d9534f', '#f0ad4e', '#5bc0de'];
+			const regenColors = ['#0275d8', '#5cb85c', '#292b2c'];
+
+			years.forEach((year, idx) => {
+				datasets.push({
+					label: `${year} Wärmesumme`,
+					data: waermeSeries[year],
+					borderColor: waermeColors[idx % waermeColors.length],
+					backgroundColor: 'transparent',
+					tension: 0.2
+				});
+				datasets.push({
+					label: `${year} Niederschlag`,
+					data: regenSeries[year],
+					borderColor: regenColors[idx % regenColors.length],
+					backgroundColor: 'transparent',
+					borderDash: [4, 4],
+					tension: 0.2
+				});
+			});
+
+			yearChart.data.labels = labels;
+			yearChart.data.datasets = datasets;
+			yearChart.update();
+		}
+
+    </script>
+</body>
+</html>
