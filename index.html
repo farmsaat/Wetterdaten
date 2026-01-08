@@ -138,37 +138,44 @@
 		let locations = [];
 		
 		async function loadLocationsFromRepo() {
-			try {
-				const response = await fetch('sdo.csv');
-				
-				if (!response.ok) {
-					throw new Error('Locations CSV file not found');
-				}
-				
-				const csvText = await response.text();
-				const lines = csvText.trim().split('\n');
-				const rows = lines.slice(1); // Skip header
-				
-				locations = rows.map(line => {
-					const parts = line.split(',');
-					const id = parts[0].replace(/"/g, '').trim();
-					const name = parts[1].replace(/"/g, '').trim();
-					const lonStr = parts[2].replace(/"/g, '').replace(',', '.').trim();
-					const latStr = parts[3].replace(/"/g, '').replace(',', '.').trim();
-					
-					return {
-						id: id,
-						name: name,
-						lat: parseFloat(latStr),
-						lon: parseFloat(lonStr)
-					};
-				});
-				
-				console.log('Loaded ' + locations.length + ' locations');
-				
-			} catch (error) {
-				console.error('Error loading locations:', error);
-			}
+		    try {
+		        const response = await fetch('sdo.csv');
+		        
+		        if (!response.ok) {
+		            throw new Error('Locations CSV file not found');
+		        }
+		        
+		        const csvText = await response.text();
+		        const lines = csvText.trim().split('\n');
+		        const rows = lines.slice(1); // Skip header
+		        
+		        locations = rows.map(line => {
+		            // Match quoted fields properly
+		            const regex = /"([^"]*)"/g;
+		            const matches = [];
+		            let match;
+		            while ((match = regex.exec(line)) !== null) {
+		                matches.push(match[1]);
+		            }
+		            
+		            const id = matches[0];
+		            const name = matches[1];
+		            const lonStr = matches[2].replace(',', '.');
+		            const latStr = matches[3].replace(',', '.');
+		            
+		            return {
+		                id: id,
+		                name: name,
+		                lat: parseFloat(latStr),
+		                lon: parseFloat(lonStr)
+		            };
+		        });
+		        
+		        console.log('Loaded ' + locations.length + ' locations');
+		        
+		    } catch (error) {
+		        console.error('Error loading locations:', error);
+		    }
 		}
 
         function generateDates(year) {
@@ -502,3 +509,4 @@
 </body>
 
 </html>
+
