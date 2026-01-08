@@ -418,13 +418,13 @@
 					ctx.drawImage(canvas, 0, 0);
 					
 					// Draw logo in top-right corner (adjust size/position as needed)
-					const logoWidth = 150;
-					const logoHeight = 75;
+					const logoWidth = 374;
+					const logoHeight = 71;
 					ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
 					
 					// Trigger download
 					const link = document.createElement('a');
-					link.download = 'weather-graph.jpg';
+					link.download = 'farmsaat-wetterdaten.jpg';
 					link.href = newCanvas.toDataURL('image/jpeg', 1.0);
 					link.click();
 				}
