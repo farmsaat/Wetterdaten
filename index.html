@@ -128,18 +128,14 @@
 
 
     <script>
-        const transformedData = {
-            2024: null,
-            2025: null,
-            2026: null
-        };
+        const transformedData = {};
 		
 		let map;
 		let markersLayer;
 		let selectedLocationId = null;
 		let yearChart = null;
 		
-		const locations = [];
+		let locations = [];
 		
 		async function loadLocationsFromRepo() {
 			try {
@@ -504,4 +500,5 @@
 
     </script>
 </body>
+
 </html>
