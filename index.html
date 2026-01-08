@@ -390,7 +390,7 @@
 			updateChart();
 		});
 		
-		async function downloadChart() {
+		function downloadChart() {
 			const canvas = document.getElementById('yearChart');
 			
 			// Create a dummy canvas
@@ -403,8 +403,8 @@
 			const bgImg = new Image();
 			const logoImg = new Image();
 			
-			bgImg.src = 'background.png';
-			logoImg.src = 'logo.png';
+			bgImg.src = 'background.png';  // Your background image
+			logoImg.src = 'logo.png';      // Your logo image
 			
 			// Wait for both images to load
 			let loadedCount = 0;
@@ -417,24 +417,16 @@
 					// Draw the chart on top
 					ctx.drawImage(canvas, 0, 0);
 					
-					// Draw logo in top-right corner
+					// Draw logo in top-right corner (adjust size/position as needed)
 					const logoWidth = 150;
 					const logoHeight = 75;
 					ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
 					
-					// Convert to image data
-					const imgData = newCanvas.toDataURL('image/jpeg', 1.0);
-					
-					// Create PDF with jsPDF
-					const { jsPDF } = window.jspdf;
-					const pdf = new jsPDF({
-						orientation: 'landscape',
-						unit: 'px',
-						format: [newCanvas.width, newCanvas.height]
-					});
-					
-					pdf.addImage(imgData, 'JPEG', 0, 0, newCanvas.width, newCanvas.height);
-					pdf.save('weather-graph.pdf');
+					// Trigger download
+					const link = document.createElement('a');
+					link.download = 'weather-graph.jpg';
+					link.href = newCanvas.toDataURL('image/jpeg', 1.0);
+					link.click();
 				}
 			};
 			
