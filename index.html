@@ -591,4 +591,41 @@
 					const dd = String(d.getDate()).padStart(2, '0');
 					const mm = String(d.getMonth() + 1).padStart(2, '0');
 
-					// label as 01.04. etc.  -> or `${dd}.${mm}.2000` if you want a
+					// label as 01.04. etc.  -> or `${dd}.${mm}.2000` if you want a year
+					labels.push(`${dd}.${mm}.`);
+				}
+			}
+
+
+			const datasets = [];
+			const waermeColors = ['#e73a1b', '#ffd632', '#83b624'];
+			const regenColors = ['#e73a1b', '#ffd632', '#83b624'];
+
+			years.forEach((year, idx) => {
+				datasets.push({
+					label: `${year} Wärmesumme`,
+					data: waermeSeries[year],
+					borderColor: waermeColors[idx % waermeColors.length],
+					backgroundColor: 'transparent',
+					tension: 0.2
+				});
+				datasets.push({
+					label: `${year} Niederschlag`,
+					data: regenSeries[year],
+					borderColor: regenColors[idx % regenColors.length],
+					backgroundColor: 'transparent',
+					borderDash: [4, 4],
+					tension: 0.2
+				});
+			});
+
+			yearChart.data.labels = labels;
+			yearChart.data.datasets = datasets;
+			yearChart.update();
+		}
+
+    </script>
+</body>
+
+</html>
+
