@@ -494,7 +494,7 @@
 					// Find the location name from selectedLocationId
 					const location = locations.find(loc => loc.id === selectedLocationId);
 					const locationName = location ? location.name : 'unknown';
-					link.download = `farmsaat-wetterdaten-${locationName}.jpg`;
+					link.download = `farmsaat_Wetterdaten_${locationName}.jpg`;
 					link.href = newCanvas.toDataURL('image/jpeg', 1.0);
 					link.click();
 				}
