@@ -82,7 +82,15 @@
 			max-width: 70vw;
 			margin: 0 auto;
 		}
+		.year-chart {
+			width: 100%;
+			height: 100%;
 		
+			background-image: url('background.png');
+			background-size: contain;
+			background-position: center;
+			background-repeat: no-repeat;
+		}
 		.download-button {
 			display: block;
 			margin: 20px auto 0;
@@ -99,25 +107,18 @@
 			background-color: #4e7526;
 		}
 	
-		/* Chart background */
-		.year-chart {
-			background-image: url('background.png');
-			background-size: contain;
-			background-position: center;
-			background-repeat: no-repeat;
-		}
-
-		/* Leaflet Geocoder */
+		/* Leaflet Geocoder Styling */
 		.leaflet-control-geocoder {
 			border-radius: 4px;
 			box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 		}
+
 		.leaflet-control-geocoder-form input {
 			width: 250px;
 			padding: 5px;
 		}
 
-		/* Logo */
+		/* Logo styling */
 		.logo-header {
 			position: absolute;
 			top: 20px;
@@ -126,6 +127,7 @@
 			height: auto;
 			z-index: 1000;
 		}
+
 		.main-view {
 			position: relative;
 		}
@@ -137,7 +139,8 @@
     <div class="main-view" id="mainView">
 		<img src="logo.png" alt="farmsaat Logo" class="logo-header">
         <div class="main-container">
-                        <!-- Aussaatzeitpunkt + Date picker -->
+            
+            <!-- Aussaatzeitpunkt + Date picker -->
             <div class="sowing-section">
                 <h3 class="sowing-title">Aussaatzeitpunkt</h3>
                 <div class="sowing-input-row">
@@ -331,7 +334,7 @@
 				attribution: '© OpenStreetMap contributors'
 			}).addTo(map);
 
-			// Add geocoding search
+			// Add geocoding search control
 			L.Control.geocoder({
 				defaultMarkGeocode: false,
 				placeholder: 'Ort suchen...',
@@ -347,6 +350,8 @@
 					bbox.getSouthWest()
 				]).addTo(map);
 				map.fitBounds(poly.getBounds());
+				
+				// Optionally add a marker at the found location
 				L.marker(e.geocode.center).addTo(map)
 					.bindPopup(e.geocode.name)
 					.openPopup();
@@ -380,30 +385,6 @@
 			});
 		}
 
-		// Horizontal lines plugin
-		const horizontalLinesPlugin = {
-			id: 'horizontalLines',
-			afterDraw: (chart) => {
-				const ctx = chart.ctx;
-				const yAxis = chart.scales.y;
-				const area = chart.chartArea;
-				if (!area || !yAxis) return;
-				
-				[1400, 1500, 1600].forEach(value => {
-					const y = yAxis.getPixelForValue(value);
-					ctx.save();
-					ctx.beginPath();
-					ctx.moveTo(area.left, y);
-					ctx.lineTo(area.right, y);
-					ctx.strokeStyle = '#999999';
-					ctx.lineWidth = 2;
-					ctx.setLineDash([5, 5]);
-					ctx.stroke();
-					ctx.restore();
-				});
-			}
-		};
-
 		function initializeChart() {
 			const ctx = document.getElementById('yearChart').getContext('2d');
 			yearChart = new Chart(ctx, {
@@ -415,12 +396,12 @@
 				options: {
 					responsive: true,
 					maintainAspectRatio: true,
-					aspectRatio: 5 / 3,
+					aspectRatio: 5 / 3,   // width / height = 4:3
 					scales: {
 						y: {
 							max: 1700
 						}
-					},   // width / height = 4:3
+					},
 					interaction: { mode: 'index', intersect: false },
 					plugins: {
 						legend: { position: 'bottom' },
@@ -438,8 +419,7 @@
 						line: {
 							tension: 0    // 0 = straight segments
 						}
-					},
-				plugins: [horizontalLinesPlugin]
+					}
 				}
 			});
 		}
