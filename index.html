@@ -469,6 +469,10 @@
 			const checkLoaded = () => {
 				loadedCount++;
 				if (loadedCount === 2) {
+					// Fill with white background first
+					ctx.fillStyle = '#ffffff';
+					ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
 					// Draw background
 					ctx.drawImage(bgImg, 0, 0, newCanvas.width, newCanvas.height);
 					
@@ -591,4 +595,5 @@
 </body>
 
 </html>
+
 
