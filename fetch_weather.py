@@ -20,7 +20,7 @@ from datetime import date
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."          # same folder as the HTML; change if needed
-YEARS          = [2018, 2025, 2026]   # add/remove years here
+YEARS          = [2018, 2024, 2025]   # add/remove years here
 START_MONTH    = "04-01"      # fetch full-year data so the HTML can slice it
 END_MONTH      = "10-31"
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
