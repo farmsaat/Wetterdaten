@@ -1,0 +1,12 @@
+id,name,lat,lon,country,timezone
+101,Musterhausen,51.5000,9.8000,DE,Europe/Berlin
+102,Beispielstadt,48.1374,11.5755,DE,Europe/Berlin
+103,Musterfeld,53.5500,9.9900,DE,Europe/Berlin
+104,Ackerhausen,50.9333,6.9500,DE,Europe/Berlin
+105,Erntedorf,51.3397,12.3731,DE,Europe/Berlin
+201,Amsterdam,52.3702,4.8952,NL,Europe/Amsterdam
+202,Rotterdam,51.9225,4.4792,NL,Europe/Amsterdam
+301,Paris,48.8566,2.3522,FR,Europe/Paris
+302,Lyon,45.7640,4.8357,FR,Europe/Paris
+401,Warschau,52.2297,21.0122,PL,Europe/Warsaw
+402,Krakau,50.0647,19.9450,PL,Europe/Warsaw
