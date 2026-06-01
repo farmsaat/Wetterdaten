@@ -35,9 +35,9 @@ DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 ARCHIVE_URL    = "https://archive-api.open-meteo.com/v1/archive"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 CURRENT_YEAR   = date.today().year
-BATCH_SIZE     = 1000   # locations per API call (max 1000; keep lower for free tier)
-RETRY_WAIT     = 5     # base seconds between retries (multiplied per attempt)
-MAX_RETRIES    = 3
+BATCH_SIZE     = 100   # locations per API call (max 1000; keep lower for free tier)
+RETRY_WAIT     = 10     # base seconds between retries (multiplied per attempt)
+MAX_RETRIES    = 5
 HEADERS        = {"User-Agent": "fetch-weather/1.0"}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
