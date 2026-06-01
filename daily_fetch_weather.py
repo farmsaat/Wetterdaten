@@ -14,17 +14,23 @@ import json
 import os
 import sys
 import time
-import urllib.request
+import socket
 import urllib.parse
 from datetime import date, timedelta
+
+import requests
+
+# ── Global socket timeout (covers TLS handshake) ──────────────────────────────
+socket.setdefaulttimeout(30)
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
-RETRY_WAIT     = 3   # seconds between retries
+RETRY_WAIT     = 3   # base seconds between retries (multiplied per attempt)
 MAX_RETRIES    = 3
+HEADERS        = {"User-Agent": "daily-weather-fetch/1.0"}
 
 # ── Date range ────────────────────────────────────────────────────────────────
 today      = date.today()
@@ -41,12 +47,17 @@ if END_DATE < START_DATE:
 def fetch_url(url: str) -> dict:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            with urllib.request.urlopen(url, timeout=30) as resp:
-                return json.loads(resp.read())
+            resp = requests.get(
+                url,
+                timeout=(10, 30),  # 10s connect/handshake, 30s read
+                headers=HEADERS,
+            )
+            resp.raise_for_status()
+            return resp.json()
         except Exception as exc:
             print(f"  [attempt {attempt}/{MAX_RETRIES}] Error: {exc}", flush=True)
             if attempt < MAX_RETRIES:
-                time.sleep(RETRY_WAIT)
+                time.sleep(RETRY_WAIT * attempt)  # exponential backoff: 3s, 6s
     raise RuntimeError(f"Failed to fetch: {url}")
 
 
