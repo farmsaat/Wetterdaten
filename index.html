@@ -68,7 +68,13 @@
 // Years to display. Each year gets its own JSON file fetched from the repo.
 // The GitHub Actions workflow should save files named e.g. "weather_2024.json"
 // using the Open-Meteo Historical API for that year (April 1 – October 1).
-const YEARS_TO_LOAD = [2018, 2024, 2025];
+const CURRENT_YEAR  = new Date().getFullYear();
+const YEARS_TO_LOAD = [
+    2018,
+    CURRENT_YEAR - 2,
+    CURRENT_YEAR - 1,
+    CURRENT_YEAR
+];
 
 // Open-Meteo daily variables used
 // temperature_2m_max  → daily max temperature (°C)
