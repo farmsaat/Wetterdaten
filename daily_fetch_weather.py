@@ -49,7 +49,7 @@ def fetch_url(url: str) -> dict:
         try:
             resp = requests.get(
                 url,
-                timeout=(30, 60),  # 10s connect/handshake, 30s read
+                timeout=(90, 10),  # 10s connect/handshake, 90s read
                 headers=HEADERS,
             )
             resp.raise_for_status()
