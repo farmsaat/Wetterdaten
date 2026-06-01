@@ -29,8 +29,8 @@ OUTPUT_DIR     = "."
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 BATCH_SIZE     = 1000   # locations per API call (max 1000; keep lower for free tier)
-RETRY_WAIT     = 5     # base seconds between retries (multiplied per attempt)
-MAX_RETRIES    = 3
+RETRY_WAIT     = 10     # base seconds between retries (multiplied per attempt)
+MAX_RETRIES    = 5
 HEADERS        = {"User-Agent": "daily-weather-fetch/1.0"}
 
 # ── Date range ────────────────────────────────────────────────────────────────
