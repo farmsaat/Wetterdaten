@@ -6,14 +6,14 @@
 # Schedule: runs every day at 03:00 UTC.
 # Manual trigger: Actions → "Fetch Weather Data" → Run workflow
 
-name: Fetch Weather Data
+name: Daily Fetch Weather Data
 
 on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily → 05:00 CEST
   workflow_dispatch:        # allows manual trigger from GitHub UI
 
 permissions:
-  schedule:
-        - cron: "0 3 * * *" # 03:00 UTC daily → 05:00 CEST
   contents: write           # needed to push the JSON files back to the repo
 
 jobs:
