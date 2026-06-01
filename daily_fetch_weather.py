@@ -23,9 +23,6 @@ from datetime import date, timedelta
 
 import requests
 
-# ── Global socket timeout (covers TLS handshake) ──────────────────────────────
-socket.setdefaulttimeout(30)
-
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."
@@ -67,7 +64,7 @@ def fetch_batch(batch: list[dict]) -> list[dict]:
         try:
             resp = requests.get(
                 url,
-                timeout=(120, 10),  # 10s connect, 120s read for large batches
+                timeout=(10, 120),  # 10s connect, 120s read for large batches
                 headers=HEADERS,
             )
             resp.raise_for_status()
