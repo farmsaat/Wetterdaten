@@ -9,8 +9,8 @@
 name: Daily Fetch Weather Data
 
 on:
-  schedule:
-    - cron: "0 3 * * *" # 03:00 UTC daily → 05:00 CEST
+#  schedule:
+#    - cron: "0 3 * * *" # 03:00 UTC daily → 05:00 CEST
   workflow_dispatch:        # allows manual trigger from GitHub UI
 
 permissions:
