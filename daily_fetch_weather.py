@@ -28,7 +28,7 @@ LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
-BATCH_SIZE     = 1000   # locations per API call (max 1000; keep lower for free tier)
+BATCH_SIZE     = 250   # locations per API call (max 1000; keep lower for free tier)
 RETRY_WAIT     = 10     # base seconds between retries (multiplied per attempt)
 MAX_RETRIES    = 5
 HEADERS        = {"User-Agent": "daily-weather-fetch/1.0"}
@@ -64,7 +64,7 @@ def fetch_batch(batch: list[dict]) -> list[dict]:
         try:
             resp = requests.get(
                 url,
-                timeout=(20, 120),  # 10s connect, 120s read for large batches
+                timeout=(20, 90),  # 10s connect, 120s read for large batches
                 headers=HEADERS,
             )
             resp.raise_for_status()
