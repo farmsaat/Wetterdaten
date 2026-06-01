@@ -29,11 +29,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      # 3. Run the fetch script
-      - name: Fetch weather JSON files
-        run: python fetch_weather.py
+      # 3. Install dependencies        ← ADD THIS STEP
+      - name: Install dependencies
+        run: pip install requests
 
-      # 4. Commit & push only if files changed
+      # 4. Run the fetch script        ← was step 3
+      - name: Fetch weather JSON files
+        run: python daily_fetch_weather.py
+
+      # 5. Commit & push only if files changed
       - name: Commit and push updated weather data
         run: |
           git config user.name  "github-actions[bot]"
