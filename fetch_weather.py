@@ -35,7 +35,7 @@ DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 ARCHIVE_URL    = "https://archive-api.open-meteo.com/v1/archive"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 CURRENT_YEAR   = date.today().year
-BATCH_SIZE     = 100   # locations per API call (max 1000; keep lower for free tier)
+BATCH_SIZE     = 1000   # locations per API call (max 1000; keep lower for free tier)
 RETRY_WAIT     = 5     # base seconds between retries (multiplied per attempt)
 MAX_RETRIES    = 3
 HEADERS        = {"User-Agent": "fetch-weather/1.0"}
@@ -61,7 +61,7 @@ def fetch_batch(batch: list[dict], year: int) -> list[dict]:
         try:
             resp = requests.get(
                 url,
-                timeout=(120, 10),  # 10s connect, 120s read for large batches
+                timeout=(20, 120),  # 10s connect, 120s read for large batches
                 headers=HEADERS,
             )
             resp.raise_for_status()
@@ -150,7 +150,7 @@ def main():
         print("\n── Errors ──────────────────────────────────────────", flush=True)
         for e in errors:
             print(f"  {e}", flush=True)
-        sys.exit(1)
+        sys.exit(3)
     else:
         print("\nAll downloads complete.", flush=True)
 
