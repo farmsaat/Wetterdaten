@@ -1,4 +1,4 @@
-# .github/workflows/fetch-weather.yml
+# .github/workflows/daily-fetch-weather.yml
 #
 # Downloads daily weather data from Open-Meteo for all locations
 # listed in locations.csv and commits the JSON files to the repository.
