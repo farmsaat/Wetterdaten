@@ -28,7 +28,7 @@ LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
-RETRY_WAIT     = 3   # base seconds between retries (multiplied per attempt)
+RETRY_WAIT     = 5   # base seconds between retries (multiplied per attempt)
 MAX_RETRIES    = 3
 HEADERS        = {"User-Agent": "daily-weather-fetch/1.0"}
 
@@ -49,7 +49,7 @@ def fetch_url(url: str) -> dict:
         try:
             resp = requests.get(
                 url,
-                timeout=(10, 30),  # 10s connect/handshake, 30s read
+                timeout=(30, 60),  # 10s connect/handshake, 30s read
                 headers=HEADERS,
             )
             resp.raise_for_status()
@@ -107,7 +107,7 @@ def main():
             print(f"    ✗ FAILED: {exc}", flush=True)
             errors.append(f"{loc_id}/{YEAR}: {exc}")
 
-        time.sleep(0.2)   # be polite to the free API
+        time.sleep(0.5)   # be polite to the free API
 
     if errors:
         print("\n── Errors ──────────────────────────────────────────", flush=True)
