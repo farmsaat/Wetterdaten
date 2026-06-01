@@ -61,7 +61,7 @@ def fetch_batch(batch: list[dict], year: int) -> list[dict]:
         try:
             resp = requests.get(
                 url,
-                timeout=(20, 120),  # 10s connect, 120s read for large batches
+                timeout=(20, 90),  # 10s connect, 120s read for large batches
                 headers=HEADERS,
             )
             resp.raise_for_status()
