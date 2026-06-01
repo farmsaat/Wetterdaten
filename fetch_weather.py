@@ -13,9 +13,14 @@ import json
 import os
 import sys
 import time
-import urllib.request
+import socket
 import urllib.parse
 from datetime import date
+
+import requests
+
+# ── Global socket timeout (covers TLS handshake) ──────────────────────────────
+socket.setdefaulttimeout(30)
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
@@ -26,20 +31,25 @@ END_MONTH      = "10-31"
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
 BASE_URL       = "https://archive-api.open-meteo.com/v1/archive"
 CURRENT_YEAR   = date.today().year
-FORECAST_URL   = "https://api.open-meteo.com/v1/forecast"  # for current/future year
-RETRY_WAIT     = 3   # seconds between retries
+RETRY_WAIT     = 3   # base seconds between retries (multiplied per attempt)
 MAX_RETRIES    = 3
+HEADERS        = {"User-Agent": "fetch-weather/1.0"}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def fetch_url(url: str) -> dict:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            with urllib.request.urlopen(url, timeout=30) as resp:
-                return json.loads(resp.read())
+            resp = requests.get(
+                url,
+                timeout=(10, 30),  # 10s connect/handshake, 30s read
+                headers=HEADERS,
+            )
+            resp.raise_for_status()
+            return resp.json()
         except Exception as exc:
             print(f"  [attempt {attempt}/{MAX_RETRIES}] Error: {exc}", flush=True)
             if attempt < MAX_RETRIES:
-                time.sleep(RETRY_WAIT)
+                time.sleep(RETRY_WAIT * attempt)  # exponential backoff: 3s, 6s
     raise RuntimeError(f"Failed to fetch: {url}")
 
 
@@ -56,17 +66,7 @@ def build_url(lat: float, lon: float, year: int, timezone: str) -> str:
         }
         return BASE_URL + "?" + urllib.parse.urlencode(params)
     else:
-        # Current year: combine past archive with forecast
-        params = {
-            "latitude":     lat,
-            "longitude":    lon,
-            "start_date":   f"{year}-{START_MONTH}",
-            "end_date":     f"{year}-{END_MONTH}",
-            "daily":        DAILY_VARS,
-            "timezone":     timezone,
-        }
-        # open-meteo forecast endpoint supports past_days + forecast_days
-        # For current year, use the historical-forecast API which is seamless
+        # Current year: use historical-forecast API which is seamless
         hf_params = {
             "latitude":   lat,
             "longitude":  lon,
