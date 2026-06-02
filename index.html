@@ -11,16 +11,51 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <title>farmsaat Wetterdaten</title>
+    <title>farmsaat weather data</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background-color: #ffffff; }
         .main-view { display: flex; flex-direction: column; gap: 20px; padding: 20px; box-sizing: border-box; min-height: 100vh; position: relative; }
         .main-container { width: 100%; max-width: 1920px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
         .main-title { margin: 0 0 16px 0; text-align: center; }
         .sowing-section { margin-bottom: 10px; }
-        .sowing-title { margin: 0 0 6px 0; }
-        .sowing-input-row { display: flex; gap: 10px; align-items: center; }
-        .sowing-input { width: 70px; }
+        .sowing-title { margin: 0; font-size: 14px; font-weight: 600; color: #333; white-space: nowrap; }
+        .sowing-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.12); margin: 0 4px; }
+
+        /* Pill-shaped card wrapping the filter inputs */
+        .sowing-input-row {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+            background-color: #f8f8f8;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            padding: 10px 18px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .sowing-input-row label {
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .sowing-input {
+            width: 70px;
+            padding: 4px 8px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 6px;
+            background: #ffffff;
+            font-size: 14px;
+            color: #222;
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .sowing-input:focus {
+            border-color: #7ab73e;
+            box-shadow: 0 0 0 3px rgba(122, 183, 62, 0.15);
+        }
+
         .map { width: 100%; height: 500px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
         .chart-wrapper { width: 70vw; max-width: 70vw; margin: 0 auto; }
         .year-chart { width: 100%; height: 100%; background-image: url('background.png'); background-size: contain; background-position: center; background-repeat: no-repeat; }
@@ -40,11 +75,12 @@
     <div class="main-container">
 
         <div class="sowing-section">
-            <h3 class="sowing-title">Aussaatzeitpunkt</h3>
             <div class="sowing-input-row">
-                <label for="dayInput">Tag</label>
+                <span class="sowing-title">Sowing date</span>
+                <div class="sowing-divider"></div>
+                <label for="dayInput">Day</label>
                 <input type="number" id="dayInput" min="1" max="31" value="1" class="sowing-input" />
-                <label for="monthInput">Monat</label>
+                <label for="monthInput">Month</label>
                 <input type="number" id="monthInput" min="1" max="12" value="4" class="sowing-input" />
             </div>
         </div>
@@ -57,7 +93,7 @@
             <canvas id="yearChart" class="year-chart"></canvas>
         </div>
 
-        <button class="download-button" onclick="downloadChart()">Diagramm herunterladen</button>
+        <button class="download-button" onclick="downloadChart()">Download chart</button>
     </div>
 </div>
 
@@ -65,9 +101,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
-// Years to display. Each year gets its own JSON file fetched from the repo.
-// The GitHub Actions workflow should save files named e.g. "weather_2024.json"
-// using the Open-Meteo Historical API for that year (April 1 – October 1).
 const CURRENT_YEAR  = new Date().getFullYear();
 const YEARS_TO_LOAD = [
     2018,
@@ -75,15 +108,10 @@ const YEARS_TO_LOAD = [
     CURRENT_YEAR
 ];
 
-// Open-Meteo daily variables used
-// temperature_2m_max  → daily max temperature (°C)
-// temperature_2m_min  → daily min temperature (°C)
-// precipitation_sum   → daily precipitation (mm)
-
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────────────────────
-const weatherData = {};   // { year: { time:[], temperature_2m_max:[], temperature_2m_min:[], precipitation_sum:[] } }
+const weatherData = {};
 let locations = [];
 let map, markersLayer, selectedLocationId = null, yearChart = null;
 
@@ -97,7 +125,7 @@ function setStatus(msg, type = '') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOAD LOCATIONS (unchanged – still reads sdo.csv)
+// LOAD LOCATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadLocationsFromRepo() {
     try {
@@ -105,7 +133,7 @@ async function loadLocationsFromRepo() {
         if (!response.ok) throw new Error('locations.csv not found');
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
-        const rows = lines.slice(1); // skip header
+        const rows = lines.slice(1);
 
         locations = rows
             .filter(line => line.trim() !== '')
@@ -127,20 +155,6 @@ async function loadLocationsFromRepo() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOAD WEATHER JSON
-// Each JSON file is a direct Open-Meteo API response saved by the GitHub
-// Actions workflow. Example filename: weather_101_2024.json
-// where 101 is the location id and 2024 the year.
-//
-// Expected JSON structure (Open-Meteo daily response):
-// {
-//   "latitude": ..., "longitude": ...,
-//   "daily": {
-//     "time":               ["2024-04-01", "2024-04-02", ...],
-//     "temperature_2m_max": [18.3, 17.1, ...],
-//     "temperature_2m_min": [8.2,  7.5,  ...],
-//     "precipitation_sum":  [0.0,  2.3,  ...]
-//   }
-// }
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadWeatherJSON(locationId, year) {
     const filename = `weather_${locationId}_${year}.json`;
@@ -150,8 +164,7 @@ async function loadWeatherJSON(locationId, year) {
         const json = await response.json();
 
         if (!weatherData[locationId]) weatherData[locationId] = {};
-        // Store the daily arrays keyed by year
-        weatherData[locationId][year] = json.daily; // { time, temperature_2m_max, temperature_2m_min, precipitation_sum }
+        weatherData[locationId][year] = json.daily;
         console.log(`Loaded ${filename}`);
     } catch (e) {
         console.warn(`Could not load weather data for location ${locationId}, year ${year}:`, e.message);
@@ -159,14 +172,7 @@ async function loadWeatherJSON(locationId, year) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRANSFORM: replicate the original Wärmesumme + Niederschlag logic,
-// but now reading from the Open-Meteo JSON instead of CSV rows.
-//
-// Original formula (unchanged):
-//   cappedMax = min(tmax, 30)
-//   avg       = (cappedMax + tmin) / 2
-//   temp      = avg - 6
-//   Wärmesumme per day = temp > 6 ? temp : 0
+// COMPUTE DAILY METRICS
 // ─────────────────────────────────────────────────────────────────────────────
 function computeDailyMetrics(locationId, year) {
     const daily = weatherData[locationId]?.[year];
@@ -191,7 +197,7 @@ function computeDailyMetrics(locationId, year) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CUMULATIVE SERIES for chart
+// CUMULATIVE SERIES
 // ─────────────────────────────────────────────────────────────────────────────
 function buildCumulativeSeries(locationId, year, metricKey) {
     const day   = parseInt(document.getElementById('dayInput').value,  10);
@@ -218,8 +224,8 @@ function initializeMap() {
 
     L.Control.geocoder({
         defaultMarkGeocode: false,
-        placeholder: 'Ort suchen...',
-        errorMessage: 'Nichts gefunden',
+        placeholder: 'Search location...',
+        errorMessage: 'Nothing found',
         collapsed: false
     }).on('markgeocode', function(e) {
         const bbox = e.geocode.bbox;
@@ -245,10 +251,9 @@ function renderLocationMarkers() {
         marker.bindTooltip(`${loc.name} (${loc.id})`);
         marker.on('click', async () => {
             selectedLocationId = loc.id;
-            // Load data for this location if not yet cached
             const missing = YEARS_TO_LOAD.filter(y => !weatherData[loc.id]?.[y]);
             if (missing.length) {
-                setStatus(`Lade Wetterdaten für ${loc.name}…`, 'loading');
+                setStatus(`Loading weather data for ${loc.name}…`, 'loading');
                 await Promise.all(missing.map(y => loadWeatherJSON(loc.id, y)));
                 setStatus('');
             }
@@ -273,7 +278,7 @@ function initializeChart() {
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { position: 'bottom' },
-                title: { display: true, text: 'Laufende Summe Wärmesumme / Niederschlag' }
+                title: { display: true, text: 'Cumulative Heat Sum / Precipitation' }
             },
             elements: {
                 point: { radius: 0, hoverRadius: 0 },
@@ -301,7 +306,6 @@ function updateChart() {
         maxLen = Math.max(maxLen, ws.length, rr.length);
     });
 
-    // Build date labels (day.month notation, year-agnostic)
     const labels = [];
     if (maxLen > 0) {
         const startDate = new Date(2000, month - 1, day);
@@ -318,14 +322,14 @@ function updateChart() {
 
     YEARS_TO_LOAD.forEach((year, idx) => {
         datasets.push({
-            label: `${year} Wärmesumme`,
+            label: `${year} Heat Sum`,
             data: waermeSeries[year],
             borderColor: waermeColors[idx % waermeColors.length],
             backgroundColor: 'transparent',
             tension: 0.2
         });
         datasets.push({
-            label: `${year} Niederschlag`,
+            label: `${year} Precipitation`,
             data: regenSeries[year],
             borderColor: regenColors[idx % regenColors.length],
             backgroundColor: 'transparent',
@@ -366,7 +370,7 @@ function downloadChart() {
             ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
             const link = document.createElement('a');
             const location = locations.find(l => l.id === selectedLocationId);
-            link.download = `farmsaat_Wetterdaten_${location ? location.name : 'unknown'}.jpg`;
+            link.download = `farmsaat_WeatherData_${location ? location.name : 'unknown'}.jpg`;
             link.href = newCanvas.toDataURL('image/jpeg', 1.0);
             link.click();
         }
@@ -392,9 +396,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     initializeChart();
     hookFilterInputs();
 
-    // Pre-load data for default location (101) for all years
     selectedLocationId = "101";
-    setStatus('Lade Wetterdaten…', 'loading');
+    setStatus('Loading weather data…', 'loading');
     await Promise.all(YEARS_TO_LOAD.map(y => loadWeatherJSON(selectedLocationId, y)));
     setStatus('');
     updateChart();
