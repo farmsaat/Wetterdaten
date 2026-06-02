@@ -149,7 +149,7 @@
 
         .mobile-tabs {
             display: none;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
             margin-top: 12px;
         }
@@ -526,7 +526,7 @@ const DEFAULT_MARKER_COLOR = '#607d8b';
 // ─────────────────────────────────────────────────────────────────────────────
 const weatherData = {};
 let locations = [];
-let map, markersLayer, selectedLocationId = null, yearChart = null;
+let map, markersLayer, mapLegendControl = null, selectedLocationId = null, yearChart = null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -559,8 +559,12 @@ function getLocationById(locationId) {
 
 function refreshResponsiveLayout() {
     if (map) {
-        setTimeout(() => map.invalidateSize(), 120);
+        setTimeout(() => {
+            map.invalidateSize();
+            updateMapLegendVisibility();
+        }, 120);
     }
+
     if (yearChart) {
         yearChart.resize();
     }
@@ -710,9 +714,12 @@ function initializeMap() {
 
     markersLayer = L.layerGroup().addTo(map);
     renderLocationMarkers();
-    addMapLegend();
-
-    setTimeout(() => map.invalidateSize(), 150);
+    updateMapLegendVisibility();
+    
+    setTimeout(() => {
+        map.invalidateSize();
+        updateMapLegendVisibility();
+    }, 150);
 }
 
 function renderLocationMarkers() {
@@ -740,8 +747,10 @@ function renderLocationMarkers() {
 }
 
 function addMapLegend() {
-    const legend = L.control({ position: 'bottomright' });
-    legend.onAdd = function () {
+    if (mapLegendControl) return;
+
+    mapLegendControl = L.control({ position: 'bottomright' });
+    mapLegendControl.onAdd = function () {
         const div = L.DomUtil.create('div', 'map-legend');
         const entries = [
             { label: 'Netherlands', color: COUNTRY_COLORS.NL },
@@ -757,7 +766,24 @@ function addMapLegend() {
         ).join('');
         return div;
     };
-    legend.addTo(map);
+
+    mapLegendControl.addTo(map);
+}
+
+function updateMapLegendVisibility() {
+    if (!map) return;
+
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+
+    const isWideEnough = mapEl.offsetWidth > mapEl.offsetHeight;
+
+    if (isWideEnough) {
+        addMapLegend();
+    } else if (mapLegendControl) {
+        map.removeControl(mapLegendControl);
+        mapLegendControl = null;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -991,7 +1017,10 @@ function hookFilterInputs() {
 
     document.getElementById('mapPanel').addEventListener('toggle', () => {
         if (document.getElementById('mapPanel').open && map) {
-            setTimeout(() => map.invalidateSize(), 150);
+            setTimeout(() => {
+                map.invalidateSize();
+                updateMapLegendVisibility();
+            }, 150);
             setActiveTab('mapPanel');
         }
     });
