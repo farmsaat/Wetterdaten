@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -13,23 +13,74 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <title>farmsaat weather data</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #ffffff; }
-        .main-view { display: flex; flex-direction: column; gap: 20px; padding: 20px; box-sizing: border-box; min-height: 100vh; position: relative; }
-        .main-container { width: 100%; max-width: 1920px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .main-title { margin: 0 0 16px 0; text-align: center; }
-        .sowing-section { margin-bottom: 10px; }
-        .sowing-title { margin: 0; font-size: 14px; font-weight: 600; color: #333; white-space: nowrap; }
-        .sowing-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.12); margin: 0 4px; }
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .main-view {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .main-title {
+            margin: 0 0 16px 0;
+            text-align: center;
+        }
+
+        .sowing-section {
+            margin-bottom: 10px;
+        }
+
+        .sowing-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .sowing-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(0,0,0,0.12);
+            margin: 0 4px;
+        }
 
         .sowing-input-row {
             display: inline-flex;
             gap: 12px;
             align-items: center;
+            flex-wrap: wrap;
             background-color: #f8f8f8;
             border: 1px solid rgba(0, 0, 0, 0.08);
             border-radius: 8px;
             padding: 10px 18px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+            max-width: 100%;
         }
 
         .sowing-input-row label {
@@ -40,11 +91,11 @@
 
         .sowing-input {
             width: 70px;
-            padding: 4px 8px;
+            padding: 8px 10px;
             border: 1px solid rgba(0, 0, 0, 0.12);
             border-radius: 6px;
             background: #ffffff;
-            font-size: 14px;
+            font-size: 16px;
             color: #222;
             outline: none;
             transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -55,17 +106,82 @@
             box-shadow: 0 0 0 3px rgba(122, 183, 62, 0.15);
         }
 
-        .map { width: 100%; height: 700px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-        .chart-wrapper { width: 70vw; max-width: 70vw; margin: 0 auto; }
-        .year-chart { width: 100%; height: 100%; background-image: url('background.png'); background-size: contain; background-position: center; background-repeat: no-repeat; }
-        .download-button { display: block; margin: 20px auto 0; padding: 10px 20px; font-size: 16px; background-color: #7ab73e; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
-        .download-button:hover { background-color: #4e7526; }
-        .leaflet-control-geocoder { border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .leaflet-control-geocoder-form input { width: 250px; padding: 5px; }
-        .logo-header { position: absolute; top: 20px; right: 20px; max-width: 210px; height: auto; z-index: 1000; }
-        #status-bar { font-size: 13px; color: #555; margin-bottom: 8px; min-height: 18px; }
-        .loading { color: #7ab73e; }
-        .error { color: #c0392b; }
+        .map {
+            width: 100%;
+            height: clamp(320px, 55vh, 700px);
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chart-wrapper {
+            width: min(100%, 1100px);
+            margin: 0 auto;
+        }
+
+        .year-chart {
+            width: 100% !important;
+            height: auto !important;
+            background-image: url('background.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .download-button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #7ab73e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            touch-action: manipulation;
+        }
+
+        .download-button:hover {
+            background-color: #4e7526;
+        }
+
+        .leaflet-control-geocoder {
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            max-width: calc(100vw - 60px);
+        }
+
+        .leaflet-control-geocoder-form input {
+            width: 250px;
+            max-width: 100%;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .logo-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            max-width: 210px;
+            height: auto;
+            z-index: 1000;
+        }
+
+        #status-bar {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 8px;
+            min-height: 18px;
+        }
+
+        .loading {
+            color: #7ab73e;
+        }
+
+        .error {
+            color: #c0392b;
+        }
 
         .attribution {
             display: flex;
@@ -78,11 +194,20 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        .attribution a { color: #7ab73e; text-decoration: none; }
-        .attribution a:hover { text-decoration: underline; }
-        .attribution .attr-sep { color: #ccc; }
 
-        /* Map legend */
+        .attribution a {
+            color: #7ab73e;
+            text-decoration: none;
+        }
+
+        .attribution a:hover {
+            text-decoration: underline;
+        }
+
+        .attribution .attr-sep {
+            color: #ccc;
+        }
+
         .map-legend {
             background: white;
             padding: 8px 12px;
@@ -90,17 +215,132 @@
             box-shadow: 0 1px 5px rgba(0,0,0,0.25);
             font-size: 13px;
             line-height: 22px;
+            max-width: 80vw;
         }
+
         .map-legend-item {
             display: flex;
             align-items: center;
             gap: 7px;
         }
+
         .map-legend-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             flex-shrink: 0;
+        }
+
+        /* Tablet */
+        @media (max-width: 900px) {
+            .main-view {
+                padding: 14px;
+                gap: 16px;
+            }
+
+            .main-container {
+                padding: 12px;
+            }
+
+            .logo-header {
+                position: static;
+                display: block;
+                margin: 0 auto 8px auto;
+                max-width: 170px;
+            }
+
+            .sowing-input-row {
+                display: flex;
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .chart-wrapper {
+                width: 100%;
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+            .main-view {
+                padding: 10px;
+                gap: 14px;
+            }
+
+            .main-container {
+                padding: 8px;
+            }
+
+            .sowing-section {
+                margin-bottom: 4px;
+            }
+
+            .sowing-input-row {
+                width: 100%;
+                gap: 10px;
+                padding: 12px;
+                align-items: center;
+            }
+
+            .sowing-title {
+                width: 100%;
+                font-size: 15px;
+            }
+
+            .sowing-divider {
+                display: none;
+            }
+
+            .sowing-input {
+                width: 84px;
+            }
+
+            .map {
+                height: 42vh;
+                min-height: 300px;
+                margin-bottom: 14px;
+            }
+
+            .download-button {
+                width: 100%;
+                max-width: 100%;
+                margin-top: 16px;
+            }
+
+            .leaflet-control-geocoder {
+                max-width: calc(100vw - 36px);
+            }
+
+            .leaflet-control-geocoder-form input {
+                width: 180px;
+                font-size: 16px;
+            }
+
+            .map-legend {
+                font-size: 12px;
+                line-height: 18px;
+                padding: 6px 8px;
+            }
+
+            .attribution {
+                font-size: 11px;
+                line-height: 1.4;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 400px) {
+            .sowing-input-row label {
+                font-size: 13px;
+            }
+
+            .sowing-input {
+                width: 72px;
+            }
+
+            .leaflet-control-geocoder-form input {
+                width: 145px;
+            }
         }
     </style>
 </head>
@@ -158,7 +398,7 @@ const COUNTRY_COLORS = {
     FR: '#1565c0', 
     PL: '#9E4B97' 
 };
-const DEFAULT_MARKER_COLOR = '#607d8b'; // blue-grey fallback
+const DEFAULT_MARKER_COLOR = '#607d8b';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE
@@ -166,6 +406,24 @@ const DEFAULT_MARKER_COLOR = '#607d8b'; // blue-grey fallback
 const weatherData = {};
 let locations = [];
 let map, markersLayer, selectedLocationId = null, yearChart = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function isMobileView() {
+    return window.innerWidth <= 640;
+}
+
+function refreshResponsiveLayout() {
+    if (map) {
+        setTimeout(() => map.invalidateSize(), 100);
+    }
+
+    if (yearChart) {
+        yearChart.options.aspectRatio = isMobileView() ? 1.2 : 5 / 3;
+        yearChart.update('none');
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATUS BAR
@@ -237,8 +495,8 @@ function computeDailyMetrics(locationId, year) {
         const prec = daily.precipitation_sum[i]  ?? 0;
 
         const cappedMax = Math.min(tmax, 30);
-        const avg       = (cappedMax + tmin) / 2;
-        const temp      = avg - 6;
+        const avg = (cappedMax + tmin) / 2;
+        const temp = avg - 6;
         const waermesumme = temp > 6 ? temp : 0;
 
         return {
@@ -253,7 +511,7 @@ function computeDailyMetrics(locationId, year) {
 // CUMULATIVE SERIES
 // ─────────────────────────────────────────────────────────────────────────────
 function buildCumulativeSeries(locationId, year, metricKey) {
-    const day   = parseInt(document.getElementById('dayInput').value,  10);
+    const day = parseInt(document.getElementById('dayInput').value, 10);
     const month = parseInt(document.getElementById('monthInput').value, 10);
     const startDateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 
@@ -262,14 +520,18 @@ function buildCumulativeSeries(locationId, year, metricKey) {
         .sort((a, b) => a.Zeitstempel.localeCompare(b.Zeitstempel));
 
     let sum = 0;
-    return rows.map(r => { sum += r[metricKey]; return sum; });
+    return rows.map(r => {
+        sum += r[metricKey];
+        return sum;
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAP
 // ─────────────────────────────────────────────────────────────────────────────
 function initializeMap() {
-    map = L.map('map').setView([51.2, 10.4], 6);
+    map = L.map('map').setView([51.2, 10.4], isMobileView() ? 5 : 6);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '© OpenStreetMap contributors'
@@ -279,7 +541,7 @@ function initializeMap() {
         defaultMarkGeocode: false,
         placeholder: 'Search location...',
         errorMessage: 'Nothing found',
-        collapsed: false
+        collapsed: isMobileView()
     }).on('markgeocode', function(e) {
         const bbox = e.geocode.bbox;
         const poly = L.polygon([
@@ -294,6 +556,8 @@ function initializeMap() {
     markersLayer = L.layerGroup().addTo(map);
     renderLocationMarkers();
     addMapLegend();
+
+    setTimeout(() => map.invalidateSize(), 150);
 }
 
 function darkenHex(hex, amount) {
@@ -311,16 +575,18 @@ function getMarkerColor(country) {
 function renderLocationMarkers() {
     markersLayer.clearLayers();
     locations.forEach(loc => {
-        const fill   = getMarkerColor(loc.country);
+        const fill = getMarkerColor(loc.country);
         const stroke = darkenHex(fill, 0.30);
         const marker = L.circleMarker([loc.lat, loc.lon], {
-            radius: 6,
+            radius: isMobileView() ? 7 : 6,
             color: stroke,
             fillColor: fill,
             fillOpacity: 0.85,
             weight: 1.5
         }).addTo(markersLayer);
+
         marker.bindTooltip(`${loc.name} (${loc.id})`);
+
         marker.on('click', async () => {
             selectedLocationId = loc.id;
             const missing = YEARS_TO_LOAD.filter(y => !weatherData[loc.id]?.[y]);
@@ -340,9 +606,9 @@ function addMapLegend() {
         const div = L.DomUtil.create('div', 'map-legend');
         const entries = [
             { label: 'Netherlands', color: COUNTRY_COLORS.NL },
-            { label: 'Germany',     color: COUNTRY_COLORS.DE },
-            { label: 'France',      color: COUNTRY_COLORS.FR },
-            { label: 'Poland',      color: COUNTRY_COLORS.PL }
+            { label: 'Germany', color: COUNTRY_COLORS.DE },
+            { label: 'France', color: COUNTRY_COLORS.FR },
+            { label: 'Poland', color: COUNTRY_COLORS.PL }
         ];
         div.innerHTML = entries.map(e =>
             `<div class="map-legend-item">
@@ -366,16 +632,29 @@ function initializeChart() {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            aspectRatio: 5 / 3,
-            scales: { y: { max: 1700 } },
+            aspectRatio: isMobileView() ? 1.2 : 5 / 3,
+            scales: {
+                y: { max: 1700 }
+            },
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom' },
-                title: { display: true, text: 'Cumulative Heat Sum / Precipitation' }
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: isMobileView() ? 12 : 20,
+                        font: {
+                            size: isMobileView() ? 11 : 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Cumulative Heat Sum / Precipitation'
+                }
             },
             elements: {
                 point: { radius: 0, hoverRadius: 0 },
-                line:  { tension: 0 }
+                line: { tension: 0 }
             }
         }
     });
@@ -384,18 +663,18 @@ function initializeChart() {
 function updateChart() {
     if (!yearChart || !selectedLocationId) return;
 
-    const day   = parseInt(document.getElementById('dayInput').value,  10);
+    const day = parseInt(document.getElementById('dayInput').value, 10);
     const month = parseInt(document.getElementById('monthInput').value, 10);
 
     const waermeSeries = {};
-    const regenSeries  = {};
+    const regenSeries = {};
     let maxLen = 0;
 
     YEARS_TO_LOAD.forEach(year => {
         const ws = buildCumulativeSeries(selectedLocationId, year, 'Waermesumme');
         const rr = buildCumulativeSeries(selectedLocationId, year, 'Niederschlag');
         waermeSeries[year] = ws;
-        regenSeries[year]  = rr;
+        regenSeries[year] = rr;
         maxLen = Math.max(maxLen, ws.length, rr.length);
     });
 
@@ -410,7 +689,7 @@ function updateChart() {
     }
 
     const waermeColors = ['#e73a1b', '#ffd632', '#83b624'];
-    const regenColors  = ['#e73a1b', '#ffd632', '#83b624'];
+    const regenColors = ['#e73a1b', '#ffd632', '#83b624'];
     const datasets = [];
 
     YEARS_TO_LOAD.forEach((year, idx) => {
@@ -431,7 +710,7 @@ function updateChart() {
         });
     });
 
-    yearChart.data.labels   = labels;
+    yearChart.data.labels = labels;
     yearChart.data.datasets = datasets;
     yearChart.update();
 }
@@ -442,13 +721,13 @@ function updateChart() {
 function downloadChart() {
     const canvas = document.getElementById('yearChart');
     const newCanvas = document.createElement('canvas');
-    newCanvas.width  = canvas.width;
+    newCanvas.width = canvas.width;
     newCanvas.height = canvas.height;
     const ctx = newCanvas.getContext('2d');
 
-    const bgImg   = new Image();
+    const bgImg = new Image();
     const logoImg = new Image();
-    bgImg.src   = 'background.png';
+    bgImg.src = 'background.png';
     logoImg.src = 'logo.png';
 
     let loadedCount = 0;
@@ -459,8 +738,10 @@ function downloadChart() {
             ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
             ctx.drawImage(bgImg, 0, 0, newCanvas.width, newCanvas.height);
             ctx.drawImage(canvas, 0, 0);
+
             const logoWidth = 210, logoHeight = 40;
             ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
+
             const link = document.createElement('a');
             const location = locations.find(l => l.id === selectedLocationId);
             link.download = `farmsaat_WeatherData_${location ? location.name : 'unknown'}.jpg`;
@@ -468,7 +749,7 @@ function downloadChart() {
             link.click();
         }
     };
-    bgImg.onload   = checkLoaded;
+    bgImg.onload = checkLoaded;
     logoImg.onload = checkLoaded;
 }
 
@@ -476,8 +757,10 @@ function downloadChart() {
 // HOOKS
 // ─────────────────────────────────────────────────────────────────────────────
 function hookFilterInputs() {
-    document.getElementById('dayInput').addEventListener('change',   updateChart);
+    document.getElementById('dayInput').addEventListener('change', updateChart);
     document.getElementById('monthInput').addEventListener('change', updateChart);
+    window.addEventListener('resize', refreshResponsiveLayout);
+    window.addEventListener('orientationchange', refreshResponsiveLayout);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -494,6 +777,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     await Promise.all(YEARS_TO_LOAD.map(y => loadWeatherJSON(selectedLocationId, y)));
     setStatus('');
     updateChart();
+    refreshResponsiveLayout();
 });
 </script>
 </body>
