@@ -303,11 +303,12 @@ function getMarkerColor(country) {
 function renderLocationMarkers() {
     markersLayer.clearLayers();
     locations.forEach(loc => {
-        const color = getMarkerColor(loc.country);
+        const fill   = getMarkerColor(loc.country);
+        const stroke = darkenHex(fill, 0.40);
         const marker = L.circleMarker([loc.lat, loc.lon], {
             radius: 6,
-            color: color,
-            fillColor: color,
+            color: stroke,
+            fillColor: fill,
             fillOpacity: 0.85,
             weight: 1.5
         }).addTo(markersLayer);
