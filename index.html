@@ -420,7 +420,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     initializeChart();
     hookFilterInputs();
 
-    selectedLocationId = "101";
+    selectedLocationId = "1001";
     setStatus('Loading weather data…', 'loading');
     await Promise.all(YEARS_TO_LOAD.map(y => loadWeatherJSON(selectedLocationId, y)));
     setStatus('');
