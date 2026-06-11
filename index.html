@@ -925,9 +925,12 @@ async function selectLocation(locationId, options = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 function downloadChart() {
     const canvas = document.getElementById('yearChart');
+    const attributionText = 'Weather data by Open-Meteo.com · Licensed under CC BY 4.0';
+    const attributionHeight = 30;
+
     const newCanvas = document.createElement('canvas');
     newCanvas.width = canvas.width;
-    newCanvas.height = canvas.height;
+    newCanvas.height = canvas.height + attributionHeight;
     const ctx = newCanvas.getContext('2d');
 
     const bgImg = new Image();
@@ -939,14 +942,27 @@ function downloadChart() {
     const checkLoaded = () => {
         loadedCount++;
         if (loadedCount === 2) {
+            // White background for entire canvas including attribution area
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
-            ctx.drawImage(bgImg, 0, 0, newCanvas.width, newCanvas.height);
+
+            // Draw background image in the chart area only
+            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+            // Draw the chart
             ctx.drawImage(canvas, 0, 0);
 
+            // Draw logo
             const logoWidth = 210;
             const logoHeight = 40;
             ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
+
+            // Draw attribution text below the chart
+            ctx.fillStyle = '#888888';
+            ctx.font = '11px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(attributionText, newCanvas.width / 2, canvas.height + attributionHeight / 2);
 
             const link = document.createElement('a');
             const location = getLocationById(selectedLocationId);
