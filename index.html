@@ -801,7 +801,11 @@ function initializeChart() {
             interaction: { mode: 'index', intersect: false },
             scales: {
                 y: {
-                    max: 1700
+                    max: 1700,
+                    title: {
+                        display: true,
+                        text: 'Wärmesumme / Niederschlag in mm'
+                    }
                 },
                 x: {
                     ticks: {
