@@ -127,7 +127,18 @@
         .sowing-input {
             width: 82px;
         }
-
+        .location-request-link {
+            font-size: 12px;
+            color: var(--brand-green-dark);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 2px 0;
+        }
+        
+        .location-request-link:hover {
+            text-decoration: underline;
+            color: var(--brand-green);
+        }
         .control-select:focus,
         .sowing-input:focus {
             border-color: var(--brand-green);
@@ -444,6 +455,7 @@
                     <label for="locationSelect" class="toolbar-label">Location</label>
                     <select id="locationSelect" class="control-select">
                         <option value="">Loading locations...</option>
+                        <a href="https://forms.office.com/YOUR_FORM_ID" target="_blank" rel="noopener noreferrer" class="location-request-link">📍 Location missing? Request one here</a>
                     </select>
                 </div>
 
@@ -804,7 +816,7 @@ function initializeChart() {
                     max: 1700,
                     title: {
                         display: true,
-                        text: 'Wärmesumme / Niederschlag in mm'
+                        text: 'Heat sum / precipitation in mm'
                     }
                 },
                 x: {
@@ -827,7 +839,7 @@ function initializeChart() {
                 },
                 title: {
                     display: true,
-                    text: 'Cumulative Heat Sum / Precipitation',
+                    text: 'Cumulative heat sum / precipitation',
                     font: {
                         size: isMobileView() ? 14 : 16
                     }
