@@ -38,6 +38,8 @@ jobs:
       # 4. Run the fetch script        ← was step 3
       - name: Fetch weather JSON files
         run: python daily_fetch_weather.py
+        env:
+          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
 
       # 5. Commit & push only if files changed
       - name: Commit and push updated weather data
