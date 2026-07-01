@@ -42,10 +42,10 @@ if not API_KEY:
     sys.exit(1)
 
 CURRENT_YEAR   = date.today().year
-BATCH_SIZE     = 1000   # max allowed by API — Professional plan has no rate limits
+BATCH_SIZE     = 150   # max allowed by API — Professional plan has no rate limits
 MAX_WORKERS    = 4      # concurrent batch requests
 RETRY_WAIT     = 3      # base seconds between retries
-MAX_RETRIES    = 4
+MAX_RETRIES    = 5
 HEADERS        = {"User-Agent": "fetch-weather/2.0 (professional)"}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
