@@ -5,8 +5,10 @@ Reads locations.csv and downloads Open-Meteo daily weather data
 (temperature_2m_max, temperature_2m_min, precipitation_sum)
 for every year specified in YEARS, saving one JSON file per location+year.
 
-Uses the Open-Meteo batch API (up to 1000 locations per request) to avoid
-per-request overhead and timeout issues on the free tier.
+Uses the Open-Meteo Professional batch API (up to 1000 locations per request)
+on dedicated customer endpoints with API key authentication.
+Concurrent batch fetching is enabled since the Professional plan has no
+per-minute or per-hour rate limits.
 
 Output filenames:  weather_<id>_<year>.json
 """
@@ -16,14 +18,11 @@ import json
 import os
 import sys
 import time
-import socket
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 
 import requests
-
-# ── Global socket timeout (covers TLS handshake) ──────────────────────────────
-socket.setdefaulttimeout(30)
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
@@ -32,16 +31,25 @@ YEARS          = [2018, 2024, 2025]   # add/remove years here
 START_MONTH    = "04-01"
 END_MONTH      = "10-31"
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
-ARCHIVE_URL    = "https://archive-api.open-meteo.com/v1/archive"
-FORECAST_URL   = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+
+# Professional plan: dedicated customer endpoints
+ARCHIVE_URL    = "https://customer-archive-api.open-meteo.com/v1/archive"
+FORECAST_URL   = "https://customer-historical-forecast-api.open-meteo.com/v1/forecast"
+API_KEY        = os.environ.get("OPEN_METEO_API_KEY", "")
+
+if not API_KEY:
+    print("ERROR: OPEN_METEO_API_KEY environment variable is not set.", flush=True)
+    sys.exit(1)
+
 CURRENT_YEAR   = date.today().year
-BATCH_SIZE     = 100   # locations per API call (max 1000; keep lower for free tier)
-RETRY_WAIT     = 10     # base seconds between retries (multiplied per attempt)
-MAX_RETRIES    = 5
-HEADERS        = {"User-Agent": "fetch-weather/1.0"}
+BATCH_SIZE     = 1000   # max allowed by API — Professional plan has no rate limits
+MAX_WORKERS    = 4      # concurrent batch requests
+RETRY_WAIT     = 3      # base seconds between retries
+MAX_RETRIES    = 4
+HEADERS        = {"User-Agent": "fetch-weather/2.0 (professional)"}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def fetch_batch(batch: list[dict], year: int) -> list[dict]:
+def fetch_batch(batch: list[dict], year: int, batch_label: str = "") -> list[dict]:
     """
     Fetch weather data for a batch of locations in a single API call.
     Returns a list of result dicts in the same order as the input batch.
@@ -54,6 +62,7 @@ def fetch_batch(batch: list[dict], year: int) -> list[dict]:
         "start_date": f"{year}-{START_MONTH}",
         "end_date":   f"{year}-{END_MONTH}",
         "daily":      DAILY_VARS,
+        "apikey":     API_KEY,
     }
     url = base_url + "?" + urllib.parse.urlencode(params)
 
@@ -61,7 +70,7 @@ def fetch_batch(batch: list[dict], year: int) -> list[dict]:
         try:
             resp = requests.get(
                 url,
-                timeout=(20, 90),  # 10s connect, 120s read for large batches
+                timeout=(30, 180),  # generous timeouts for large 1000-loc batches
                 headers=HEADERS,
             )
             resp.raise_for_status()
@@ -69,12 +78,20 @@ def fetch_batch(batch: list[dict], year: int) -> list[dict]:
             # API returns a list when multiple locations are requested,
             # or a single dict when only one location is requested
             return data if isinstance(data, list) else [data]
+        except requests.exceptions.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            # Don't retry on client errors (except 429 which shouldn't happen on Pro)
+            if status and 400 <= status < 500 and status != 429:
+                print(f"  [{batch_label}] Client error {status}: {exc}", flush=True)
+                raise
+            print(f"  [{batch_label}, attempt {attempt}/{MAX_RETRIES}] HTTP {status}: {exc}", flush=True)
         except Exception as exc:
-            print(f"  [attempt {attempt}/{MAX_RETRIES}] Batch error: {exc}", flush=True)
-            if attempt < MAX_RETRIES:
-                time.sleep(RETRY_WAIT * attempt)  # backoff: 5s, 10s
+            print(f"  [{batch_label}, attempt {attempt}/{MAX_RETRIES}] Error: {exc}", flush=True)
 
-    raise RuntimeError(f"Failed to fetch batch of {len(batch)} locations for {year}")
+        if attempt < MAX_RETRIES:
+            time.sleep(RETRY_WAIT * attempt)
+
+    raise RuntimeError(f"Failed to fetch {batch_label} ({len(batch)} locations)")
 
 
 def chunked(lst: list, size: int):
@@ -101,50 +118,75 @@ def main():
     total   = len(locations)
     batches = list(chunked(locations, BATCH_SIZE))
     print(
-        f"Loaded {total} location(s) → {len(batches)} batch(es) of up to {BATCH_SIZE}. "
-        f"Fetching years: {YEARS}",
+        f"Loaded {total} location(s) → {len(batches)} batch(es) of up to {BATCH_SIZE}.\n"
+        f"Fetching years: {YEARS}\n"
+        f"Endpoints: {ARCHIVE_URL} / {FORECAST_URL} | Concurrency: {MAX_WORKERS}",
         flush=True,
     )
 
     errors = []
 
+    # Build a list of all (year, batch_idx, pending_locations) work items
+    work_items = []
     for year in YEARS:
-        print(f"\n── Year {year} ──────────────────────────────────────────", flush=True)
-
         for batch_idx, batch in enumerate(batches, 1):
             # Skip locations where the output file already exists
             pending = [loc for loc in batch
                        if not os.path.exists(
                            os.path.join(OUTPUT_DIR, f"weather_{loc['id']}_{year}.json")
                        )]
+            if pending:
+                work_items.append((year, batch_idx, pending))
+            else:
+                print(f"  [{year}] Batch {batch_idx}/{len(batches)} — all files exist, skipping.", flush=True)
 
-            if not pending:
-                print(f"  Batch {batch_idx}/{len(batches)} — all files exist, skipping.", flush=True)
-                continue
+    print(f"\n{len(work_items)} batch request(s) to make.\n", flush=True)
 
-            print(f"  Batch {batch_idx}/{len(batches)} ({len(pending)} locations) …", flush=True)
+    if not work_items:
+        print("Nothing to fetch — all files already exist.", flush=True)
+        return
+
+    # Fetch all batches concurrently — Professional plan has no rate limits
+    def process_work_item(item):
+        year, batch_idx, pending = item
+        label = f"{year}/batch-{batch_idx}"
+        results = fetch_batch(pending, year, label)
+        return year, batch_idx, pending, results
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(process_work_item, item): item
+            for item in work_items
+        }
+
+        for future in as_completed(futures):
+            item = futures[future]
+            year, batch_idx, pending = item
+
             try:
-                results = fetch_batch(pending, year)
+                _, _, _, results = future.result()
+                print(
+                    f"✓ [{year}] Batch {batch_idx}/{len(batches)} "
+                    f"({len(pending)} locations) fetched.",
+                    flush=True,
+                )
+
+                # Save one JSON file per location
+                for loc, data in zip(pending, results):
+                    loc_id   = loc["id"]
+                    out_file = os.path.join(OUTPUT_DIR, f"weather_{loc_id}_{year}.json")
+                    try:
+                        with open(out_file, "w", encoding="utf-8") as fout:
+                            json.dump(data, fout, separators=(",", ":"))
+                        print(f"    ✓ {loc['name']} ({loc_id}) → {out_file}", flush=True)
+                    except OSError as exc:
+                        print(f"    ✗ {loc['name']} ({loc_id}) write error: {exc}", flush=True)
+                        errors.append(f"{loc_id}/{year}: write error: {exc}")
+
             except RuntimeError as exc:
-                print(f"  ✗ Entire batch FAILED: {exc}", flush=True)
+                print(f"✗ [{year}] Batch {batch_idx}/{len(batches)} FAILED: {exc}", flush=True)
                 for loc in pending:
                     errors.append(f"{loc['id']}/{year}: batch failed")
-                time.sleep(RETRY_WAIT)
-                continue
-
-            # Save one JSON file per location
-            for loc, data in zip(pending, results):
-                loc_id   = loc["id"]
-                out_file = os.path.join(OUTPUT_DIR, f"weather_{loc_id}_{year}.json")
-                try:
-                    with open(out_file, "w", encoding="utf-8") as fout:
-                        json.dump(data, fout, separators=(",", ":"))
-                    print(f"    ✓ {loc['name']} ({loc_id}) → {out_file}", flush=True)
-                except OSError as exc:
-                    print(f"    ✗ {loc['name']} ({loc_id}) write error: {exc}", flush=True)
-                    errors.append(f"{loc_id}/{year}: write error: {exc}")
-
-            time.sleep(1)  # brief pause between batches — polite to the free API
 
     if errors:
         print("\n── Errors ──────────────────────────────────────────", flush=True)
