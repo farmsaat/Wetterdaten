@@ -38,7 +38,7 @@ if not API_KEY:
     print("ERROR: OPEN_METEO_API_KEY environment variable is not set.", flush=True)
     sys.exit(1)
 
-BATCH_SIZE     = 1000   # max allowed by API — Professional plan has no rate limits
+BATCH_SIZE     = 150   # max allowed by API — Professional plan has no rate limits
 MAX_WORKERS    = 4      # concurrent batch requests
 RETRY_WAIT     = 3      # base seconds between retries
 MAX_RETRIES    = 4
