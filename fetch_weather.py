@@ -27,7 +27,7 @@ import requests
 # ── Configuration ─────────────────────────────────────────────────────────────
 LOCATIONS_FILE = "locations.csv"
 OUTPUT_DIR     = "."
-YEARS          = [2018, 2024, 2025]   # add/remove years here
+YEARS          = [2018, 2025]   # add/remove years here
 START_MONTH    = "04-01"
 END_MONTH      = "10-31"
 DAILY_VARS     = "temperature_2m_max,temperature_2m_min,precipitation_sum"
