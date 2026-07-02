@@ -1,3 +1,4 @@
+id,name,lat,lon,country,timezone
 5000,Brüssel,50.8503,4.3517,BE,Europe/Brussels
 5001,Antwerpen,51.2194,4.4025,BE,Europe/Brussels
 5002,Gent,51.0543,3.7174,BE,Europe/Brussels
