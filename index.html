@@ -529,7 +529,8 @@ const COUNTRY_COLORS = {
     NL: '#902632',
     DE: '#FFD631',
     FR: '#1565c0',
-    PL: '#9E4B97'
+    PL: '#9E4B97',
+    BE: '#849ABD'
 };
 const DEFAULT_MARKER_COLOR = '#607d8b';
 
@@ -768,7 +769,8 @@ function addMapLegend() {
             { label: 'Netherlands', color: COUNTRY_COLORS.NL },
             { label: 'Germany', color: COUNTRY_COLORS.DE },
             { label: 'France', color: COUNTRY_COLORS.FR },
-            { label: 'Poland', color: COUNTRY_COLORS.PL }
+            { label: 'Poland', color: COUNTRY_COLORS.PL },
+            { label: 'Belgium', color: COUNTRY_COLORS.BE }
         ];
         div.innerHTML = entries.map(e =>
             `<div class="map-legend-item">
