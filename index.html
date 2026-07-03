@@ -787,14 +787,37 @@ function initializeMap() {
         errorMessage: 'Nothing found',
         collapsed: isMobileView()
     }).on('markgeocode', function(e) {
+        // Remove previous geocode overlays
+        if (geocodePolygon) {
+            map.removeLayer(geocodePolygon);
+            geocodePolygon = null;
+        }
+        if (geocodeMarker) {
+            map.removeLayer(geocodeMarker);
+            geocodeMarker = null;
+        }
+
         const bbox = e.geocode.bbox;
-        const poly = L.polygon([
+        geocodePolygon = L.polygon([
             bbox.getSouthEast(), bbox.getNorthEast(),
             bbox.getNorthWest(), bbox.getSouthWest()
-        ]).addTo(map);
-        map.fitBounds(poly.getBounds());
-        L.marker(e.geocode.center).addTo(map)
-            .bindPopup(e.geocode.name).openPopup();
+        ], { interactive: false }).addTo(map);
+
+        map.fitBounds(geocodePolygon.getBounds());
+
+        geocodeMarker = L.marker(e.geocode.center, { interactive: false }).addTo(map);
+
+        // Remove the overlay after a short delay so it doesn't permanently block markers
+        setTimeout(() => {
+            if (geocodePolygon) {
+                map.removeLayer(geocodePolygon);
+                geocodePolygon = null;
+            }
+            if (geocodeMarker) {
+                map.removeLayer(geocodeMarker);
+                geocodeMarker = null;
+            }
+        }, 3000);
     }).addTo(map);
 
     markersLayer = L.layerGroup().addTo(map);
