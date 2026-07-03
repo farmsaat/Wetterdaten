@@ -24,456 +24,423 @@
             --shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
             --radius: 12px;
         }
-    * {
-        box-sizing: border-box;
-    }
 
-    html, body {
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-        background: #ffffff;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-        font-family: Arial, sans-serif;
-        color: var(--text);
-        -webkit-text-size-adjust: 100%;
-    }
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background: #ffffff;
+        }
 
-    .main-view {
-        min-height: 100vh;
-        padding: 16px;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            color: var(--text);
+            -webkit-text-size-adjust: 100%;
+        }
 
-    .main-container {
-        width: 100%;
-        max-width: 1440px;
-        margin: 0 auto;
-    }
-
-    .app-header {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 14px;
-    }
-
-    .logo-header {
-        max-width: 210px;
-        width: 100%;
-        height: auto;
-    }
-
-    .sticky-toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 1100;
-        background: rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(8px);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 12px;
-        margin-bottom: 14px;
-    }
-
-    .toolbar-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: start;
-    }
-
-    .filter-block {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        min-width: 120px;
-    }
-
-    .filter-inline {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .toolbar-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #444;
-    }
-
-    .control-select,
-    .sowing-input {
-        min-height: 42px;
-        padding: 8px 10px;
-        border: 1px solid rgba(0, 0, 0, 0.12);
-        border-radius: 8px;
-        background: #ffffff;
-        font-size: 16px;
-        color: var(--text);
-        outline: none;
-        transition: border-color 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .control-select {
-        min-width: 220px;
-        max-width: 100%;
-    }
-
-    .sowing-input {
-        width: 82px;
-    }
-    .location-request-link {
-        font-size: 12px;
-        color: var(--brand-green-dark);
-        text-decoration: none;
-        font-weight: 500;
-        padding: 2px 0;
-    }
-    
-    .location-request-link:hover {
-        text-decoration: underline;
-        color: var(--brand-green);
-    }
-    .control-select:focus,
-    .sowing-input:focus {
-        border-color: var(--brand-green);
-        box-shadow: 0 0 0 3px rgba(122, 183, 62, 0.15);
-    }
-
-    .filter-pair {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .filter-pair label {
-        font-size: 14px;
-        color: #555;
-        font-weight: 500;
-    }
-
-    .mobile-tabs {
-        display: none;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin-top: 12px;
-    }
-
-    .tab-button {
-        min-height: 42px;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        background: #fff;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #444;
-        cursor: pointer;
-    }
-
-    .tab-button.active {
-        background: var(--brand-green);
-        color: #fff;
-        border-color: var(--brand-green);
-    }
-
-    #status-bar {
-        font-size: 13px;
-        color: #555;
-        margin-bottom: 12px;
-        min-height: 18px;
-        padding: 0 2px;
-    }
-
-    .loading {
-        color: var(--brand-green);
-    }
-
-    .error {
-        color: #c0392b;
-    }
-
-    .panels {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .collapsible-panel {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--surface);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-    }
-
-    .collapsible-panel summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 14px 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-weight: 700;
-        font-size: 15px;
-        color: #2a2a2a;
-        user-select: none;
-    }
-
-    .collapsible-panel summary::-webkit-details-marker {
-        display: none;
-    }
-
-    .collapsible-panel summary::after {
-        content: "▾";
-        font-size: 15px;
-        color: #666;
-        transition: transform 0.2s ease;
-    }
-
-    .collapsible-panel[open] summary::after {
-        transform: rotate(180deg);
-    }
-
-    .panel-body {
-        padding: 0 16px 16px;
-    }
-
-    .panel-hint {
-        font-size: 13px;
-        color: var(--muted);
-        margin: 0 0 12px 0;
-    }
-
-    .map {
-        width: 100%;
-        height: clamp(340px, 58vh, 720px);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .chart-wrapper {
-        width: 100%;
-        height: 720px;
-    }
-
-    .year-chart {
-        width: 100% !important;
-        height: 100% !important;
-        background-image: url('background.png');
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
-
-    .download-button {
-        display: inline-block;
-        margin: 14px 0 0;
-        padding: 12px 20px;
-        font-size: 16px;
-        background-color: var(--brand-green);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        touch-action: manipulation;
-    }
-
-    .download-button:hover {
-        background-color: var(--brand-green-dark);
-    }
-
-    .varieties-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 15px;
-    }
-
-    .varieties-table th,
-    .varieties-table td {
-        padding: 12px 16px;
-        text-align: left;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .varieties-table th {
-        font-weight: 700;
-        font-size: 14px;
-        color: #444;
-        background: var(--surface-soft);
-    }
-
-    .varieties-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .varieties-table tr:hover td {
-        background: var(--surface-soft);
-    }
-
-    .leaflet-control-geocoder {
-        border-radius: 6px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        max-width: calc(100vw - 56px);
-    }
-
-    .leaflet-control-geocoder-form input {
-        width: 240px;
-        max-width: 100%;
-        padding: 8px;
-        font-size: 16px;
-    }
-
-    .map-legend {
-        background: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        box-shadow: 0 1px 5px rgba(0,0,0,0.25);
-        font-size: 13px;
-        line-height: 22px;
-        max-width: 80vw;
-    }
-
-    .map-legend-item {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-
-    .map-legend-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .attribution {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: #888;
-        margin-top: 16px;
-        text-align: center;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .attribution a {
-        color: var(--brand-green);
-        text-decoration: none;
-    }
-
-    .attribution a:hover {
-        text-decoration: underline;
-    }
-
-    .attribution .attr-sep {
-        color: #ccc;
-    }
-
-    @media (max-width: 900px) {
         .main-view {
-            padding: 12px;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 14px;
         }
 
         .logo-header {
-            max-width: 170px;
-        }
-
-        .chart-wrapper {
-            height: 360px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .mobile-tabs {
-            display: grid;
+            max-width: 210px;
+            width: 100%;
+            height: auto;
         }
 
         .sticky-toolbar {
-            padding: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 1100;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 12px;
+            margin-bottom: 14px;
         }
 
         .toolbar-grid {
-            gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: start;
         }
 
         .filter-block {
-            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 120px;
+        }
+
+        .filter-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .control-select,
+        .sowing-input {
+            min-height: 42px;
+            padding: 8px 10px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 8px;
+            background: #ffffff;
+            font-size: 16px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
         }
 
         .control-select {
-            min-width: 0;
-            width: 100%;
-        }
-
-        .map {
-            height: 42vh;
-            min-height: 300px;
-        }
-
-        .chart-wrapper {
-            height: 300px;
-        }
-
-        .download-button {
-            width: 100%;
-        }
-
-        .leaflet-control-geocoder {
-            max-width: calc(100vw - 36px);
-        }
-
-        .leaflet-control-geocoder-form input {
-            width: 170px;
-        }
-
-        .map-legend {
-            font-size: 12px;
-            line-height: 18px;
-            padding: 6px 8px;
-        }
-    }
-
-    @media (max-width: 420px) {
-        .main-view {
-            padding: 10px;
-        }
-
-        .panel-body {
-            padding: 0 12px 12px;
-        }
-
-        .collapsible-panel summary {
-            padding: 12px;
+            min-width: 220px;
+            max-width: 100%;
         }
 
         .sowing-input {
-            width: 76px;
+            width: 82px;
+        }
+        .location-request-link {
+            font-size: 12px;
+            color: var(--brand-green-dark);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 2px 0;
+        }
+        
+        .location-request-link:hover {
+            text-decoration: underline;
+            color: var(--brand-green);
+        }
+        .control-select:focus,
+        .sowing-input:focus {
+            border-color: var(--brand-green);
+            box-shadow: 0 0 0 3px rgba(122, 183, 62, 0.15);
+        }
+
+        .filter-pair {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-pair label {
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .mobile-tabs {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .tab-button {
+            min-height: 42px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+            cursor: pointer;
+        }
+
+        .tab-button.active {
+            background: var(--brand-green);
+            color: #fff;
+            border-color: var(--brand-green);
+        }
+
+        #status-bar {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 12px;
+            min-height: 18px;
+            padding: 0 2px;
+        }
+
+        .loading {
+            color: var(--brand-green);
+        }
+
+        .error {
+            color: #c0392b;
+        }
+
+        .panels {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .collapsible-panel {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .collapsible-panel summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 15px;
+            color: #2a2a2a;
+            user-select: none;
+        }
+
+        .collapsible-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .collapsible-panel summary::after {
+            content: "▾";
+            font-size: 15px;
+            color: #666;
+            transition: transform 0.2s ease;
+        }
+
+        .collapsible-panel[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .panel-body {
+            padding: 0 16px 16px;
+        }
+
+        .panel-hint {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0 0 12px 0;
+        }
+
+        .map {
+            width: 100%;
+            height: clamp(340px, 58vh, 720px);
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         .chart-wrapper {
-            height: 270px;
+            width: 100%;
+            height: 720px;
+        }
+
+        .year-chart {
+            width: 100% !important;
+            height: 100% !important;
+            background-image: url('background.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .download-button {
+            display: inline-block;
+            margin: 14px 0 0;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: var(--brand-green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            touch-action: manipulation;
+        }
+
+        .download-button:hover {
+            background-color: var(--brand-green-dark);
+        }
+
+        .leaflet-control-geocoder {
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            max-width: calc(100vw - 56px);
+        }
+
+        .leaflet-control-geocoder-form input {
+            width: 240px;
+            max-width: 100%;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .map-legend {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+            font-size: 13px;
+            line-height: 22px;
+            max-width: 80vw;
+        }
+
+        .map-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .map-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
         }
 
         .attribution {
-            font-size: 11px;
-            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #888;
+            margin-top: 16px;
+            text-align: center;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .varieties-table th,
-        .varieties-table td {
-            padding: 10px 12px;
-            font-size: 14px;
+        .attribution a {
+            color: var(--brand-green);
+            text-decoration: none;
         }
-    }
-</style>
+
+        .attribution a:hover {
+            text-decoration: underline;
+        }
+
+        .attribution .attr-sep {
+            color: #ccc;
+        }
+
+        @media (max-width: 900px) {
+            .main-view {
+                padding: 12px;
+            }
+
+            .logo-header {
+                max-width: 170px;
+            }
+
+            .chart-wrapper {
+                height: 360px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-tabs {
+                display: grid;
+            }
+
+            .sticky-toolbar {
+                padding: 10px;
+            }
+
+            .toolbar-grid {
+                gap: 10px;
+            }
+
+            .filter-block {
+                width: 100%;
+            }
+
+            .control-select {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .map {
+                height: 42vh;
+                min-height: 300px;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .download-button {
+                width: 100%;
+            }
+
+            .leaflet-control-geocoder {
+                max-width: calc(100vw - 36px);
+            }
+
+            .leaflet-control-geocoder-form input {
+                width: 170px;
+            }
+
+            .map-legend {
+                font-size: 12px;
+                line-height: 18px;
+                padding: 6px 8px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .main-view {
+                padding: 10px;
+            }
+
+            .panel-body {
+                padding: 0 12px 12px;
+            }
+
+            .collapsible-panel summary {
+                padding: 12px;
+            }
+
+            .sowing-input {
+                width: 76px;
+            }
+
+            .chart-wrapper {
+                height: 270px;
+            }
+
+            .attribution {
+                font-size: 11px;
+                line-height: 1.4;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="main-view" id="mainView">
@@ -481,109 +448,70 @@
         <div class="app-header">
             <img src="logo.png" alt="farmsaat Logo" class="logo-header">
         </div>
-    <div class="sticky-toolbar" id="filtersPanel">
-        <div class="toolbar-grid">
-            <div class="filter-block">
-                <label for="locationSelect" class="toolbar-label">Location</label>
-                <select id="locationSelect" class="control-select">
-                    <option value="">Loading locations...</option>
-                </select>
-                <a href="https://forms.office.com/e/B28BPiTumt" target="_blank" rel="noopener noreferrer" class="location-request-link">Location missing? Request one here</a>
-            </div>
 
-            <div class="filter-block">
-                <span class="toolbar-label">Sowing date</span>
-                <div class="filter-inline">
-                    <div class="filter-pair">
-                        <label for="dayInput">Day</label>
-                        <input type="number" id="dayInput" min="1" max="31" value="1" class="sowing-input" />
-                    </div>
-                    <div class="filter-pair">
-                        <label for="monthInput">Month</label>
-                        <input type="number" id="monthInput" min="1" max="12" value="4" class="sowing-input" />
+        <div class="sticky-toolbar" id="filtersPanel">
+            <div class="toolbar-grid">
+                <div class="filter-block">
+                    <label for="locationSelect" class="toolbar-label">Location</label>
+                    <select id="locationSelect" class="control-select">
+                        <option value="">Loading locations...</option>
+                    </select>
+                    <a href="https://forms.office.com/e/B28BPiTumt" target="_blank" rel="noopener noreferrer" class="location-request-link">Location missing? Request one here</a>
+                </div>
+
+                <div class="filter-block">
+                    <span class="toolbar-label">Sowing date</span>
+                    <div class="filter-inline">
+                        <div class="filter-pair">
+                            <label for="dayInput">Day</label>
+                            <input type="number" id="dayInput" min="1" max="31" value="1" class="sowing-input" />
+                        </div>
+                        <div class="filter-pair">
+                            <label for="monthInput">Month</label>
+                            <input type="number" id="monthInput" min="1" max="12" value="4" class="sowing-input" />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mobile-tabs">
-            <button class="tab-button" data-target="mapPanel">Map</button>
-            <button class="tab-button" data-target="chartPanel">Chart</button>
-            <button class="tab-button" data-target="varietiesPanel">Varieties</button>
-        </div>
-    </div>
-
-    <div id="status-bar"></div>
-
-    <div class="panels">
-        <details class="collapsible-panel" id="mapPanel" open>
-            <summary>Map</summary>
-            <div class="panel-body">
-                <p class="panel-hint">Tap a marker or choose a location from the dropdown above.</p>
-                <div id="map" class="map"></div>
+            <div class="mobile-tabs">
+                <button class="tab-button" data-target="mapPanel">Map</button>
+                <button class="tab-button" data-target="chartPanel">Chart</button>
             </div>
-        </details>
+        </div>
 
-        <details class="collapsible-panel" id="chartPanel" open>
-            <summary>Chart</summary>
-            <div class="panel-body">
-                <div class="chart-wrapper">
-                    <canvas id="yearChart" class="year-chart"></canvas>
+        <div id="status-bar"></div>
+
+        <div class="panels">
+            <details class="collapsible-panel" id="mapPanel" open>
+                <summary>Map</summary>
+                <div class="panel-body">
+                    <p class="panel-hint">Tap a marker or choose a location from the dropdown above.</p>
+                    <div id="map" class="map"></div>
                 </div>
-                <button class="download-button" onclick="downloadChart()">Download chart</button>
-            </div>
-        </details>
+            </details>
 
-        <details class="collapsible-panel" id="varietiesPanel" open>
-            <summary>Varieties</summary>
-            <div class="panel-body">
-                <table class="varieties-table">
-                    <thead>
-                        <tr>
-                            <th>Variety FAO</th>
-                            <th>Heat sum needed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>160 - 180 (i.e. FARMQUICK)</td>
-                            <td>1200 - 1400</td>
-                        </tr>
-                        <tr>
-                            <td>190 - 210 (i.e. FARMISTIK)</td>
-                            <td>1300 - 1500</td>
-                        </tr>
-                        <tr>
-                            <td>220 - 240 (i.e. FARMODENA)</td>
-                            <td>1400 - 1600</td>
-                        </tr>
-                        <tr>
-                            <td>250 - 270 (i.e. FARMORITZ)</td>
-                            <td>1450 - 1700</td>
-                        </tr>
-                        <tr>
-                            <td>280 - 300 (i.e. FARMIKONE)</td>
-                            <td>1550 - 1750</td>
-                        </tr>
-                        <tr>
-                            <td>310 - 330 (i.e. FARMPAX)</td>
-                            <td>1650 - 1800</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </details>
+            <details class="collapsible-panel" id="chartPanel" open>
+                <summary>Chart</summary>
+                <div class="panel-body">
+                    <div class="chart-wrapper">
+                        <canvas id="yearChart" class="year-chart"></canvas>
+                    </div>
+                    <button class="download-button" onclick="downloadChart()">Download chart</button>
+                </div>
+            </details>
+        </div>
+
+        <p class="attribution">
+            Weather data by
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+            <span class="attr-sep">·</span>
+            This application uses weather data from Open-Meteo, licensed under
+            <a href="https://open-meteo.com/en/licence" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+        </p>
     </div>
+</div>
 
-    <p class="attribution">
-        Weather data by
-        <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
-        <span class="attr-sep">·</span>
-        This application uses weather data from Open-Meteo, licensed under
-        <a href="https://open-meteo.com/en/licence" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
-    </p>
-</div>
-</div>
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -787,37 +715,14 @@ function initializeMap() {
         errorMessage: 'Nothing found',
         collapsed: isMobileView()
     }).on('markgeocode', function(e) {
-        // Remove previous geocode overlays
-        if (geocodePolygon) {
-            map.removeLayer(geocodePolygon);
-            geocodePolygon = null;
-        }
-        if (geocodeMarker) {
-            map.removeLayer(geocodeMarker);
-            geocodeMarker = null;
-        }
-
         const bbox = e.geocode.bbox;
-        geocodePolygon = L.polygon([
+        const poly = L.polygon([
             bbox.getSouthEast(), bbox.getNorthEast(),
             bbox.getNorthWest(), bbox.getSouthWest()
-        ], { interactive: false }).addTo(map);
-
-        map.fitBounds(geocodePolygon.getBounds());
-
-        geocodeMarker = L.marker(e.geocode.center, { interactive: false }).addTo(map);
-
-        // Remove the overlay after a short delay so it doesn't permanently block markers
-        setTimeout(() => {
-            if (geocodePolygon) {
-                map.removeLayer(geocodePolygon);
-                geocodePolygon = null;
-            }
-            if (geocodeMarker) {
-                map.removeLayer(geocodeMarker);
-                geocodeMarker = null;
-            }
-        }, 3000);
+        ]).addTo(map);
+        map.fitBounds(poly.getBounds());
+        L.marker(e.geocode.center).addTo(map)
+            .bindPopup(e.geocode.name).openPopup();
     }).addTo(map);
 
     markersLayer = L.layerGroup().addTo(map);
@@ -1051,15 +956,22 @@ function downloadChart() {
     const checkLoaded = () => {
         loadedCount++;
         if (loadedCount === 2) {
+            // White background for entire canvas including attribution area
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+            // Draw background image in the chart area only
             ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+            // Draw the chart
             ctx.drawImage(canvas, 0, 0);
 
+            // Draw logo
             const logoWidth = 210;
             const logoHeight = 40;
             ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
 
+            // Draw attribution text below the chart
             ctx.fillStyle = '#888888';
             ctx.font = '11px Arial, sans-serif';
             ctx.textAlign = 'center';
@@ -1150,12 +1062,6 @@ function hookFilterInputs() {
         }
     });
 
-    document.getElementById('varietiesPanel').addEventListener('toggle', () => {
-        if (document.getElementById('varietiesPanel').open) {
-            setActiveTab('varietiesPanel');
-        }
-    });
-
     window.addEventListener('resize', refreshResponsiveLayout);
     window.addEventListener('orientationchange', refreshResponsiveLayout);
 }
@@ -1191,7 +1097,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     if (isMobileView()) {
         document.getElementById('chartPanel').open = false;
-        document.getElementById('varietiesPanel').open = false;
         document.getElementById('mapPanel').open = true;
         setActiveTab('filtersPanel');
     }
