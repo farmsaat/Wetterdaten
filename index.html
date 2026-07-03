@@ -719,9 +719,10 @@ function initializeMap() {
         const poly = L.polygon([
             bbox.getSouthEast(), bbox.getNorthEast(),
             bbox.getNorthWest(), bbox.getSouthWest()
-        ]).addTo(map);
+        ], { interactive: false }).addTo(map);
         map.fitBounds(poly.getBounds());
-        L.marker(e.geocode.center).addTo(map)
+        setTimeout(() => map.removeLayer(poly), 500);
+        L.marker(e.geocode.center, { interactive: false }).addTo(map)
             .bindPopup(e.geocode.name).openPopup();
     }).addTo(map);
 
