@@ -1,3 +1,4 @@
+id,name,lat,lon,country,timezone
 4001,Arnhem,51.9851,5.8987,NL,Europe/Amsterdam
 4002,Apeldoorn,52.2112,5.9699,NL,Europe/Amsterdam
 4003,Zwolle,52.5168,6.083,NL,Europe/Amsterdam
