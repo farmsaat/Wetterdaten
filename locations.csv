@@ -617,6 +617,14 @@ id,name,lat,lon,country,timezone
 4092,Winsum,53.33,6.5208,NL,Europe/Amsterdam
 4093,Lauwerzijl,53.3108,6.2958,NL,Europe/Amsterdam
 4094,Elsloo,52.9427,6.2382,NL,Europe/Amsterdam
+4095,Holten,52.2808,6.4222,NL,Europe/Amsterdam
+4096,Lochem,52.1592,6.4111,NL,Europe/Amsterdam
+4097,Varsseveld,51.9433,6.4583,NL,Europe/Amsterdam
+4098,Vaassen,52.2858,5.9667,NL,Europe/Amsterdam
+4099,Putten,52.2592,5.6069,NL,Europe/Amsterdam
+4100,Noordbroek,53.195,6.8736,NL,Europe/Amsterdam
+4101,Margraten,50.8208,5.8208,NL,Europe/Amsterdam
+4102,Lemele,52.4525,6.4153,NL,Europe/Amsterdam
 5000,Brüssel,50.8503,4.3517,BE,Europe/Brussels
 5001,Antwerpen,51.2194,4.4025,BE,Europe/Brussels
 5002,Gent,51.0543,3.7174,BE,Europe/Brussels
