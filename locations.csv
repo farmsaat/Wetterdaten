@@ -625,6 +625,8 @@ id,name,lat,lon,country,timezone
 4100,Noordbroek,53.195,6.8736,NL,Europe/Amsterdam
 4101,Margraten,50.8208,5.8208,NL,Europe/Amsterdam
 4102,Lemele,52.4525,6.4153,NL,Europe/Amsterdam
+4103,Beltrum,52.0667,6.5639,NL,Europe/Amsterdam
+4104,Ruurlo,52.0883,6.45,NL,Europe/Amsterdam
 5000,Brüssel,50.8503,4.3517,BE,Europe/Brussels
 5001,Antwerpen,51.2194,4.4025,BE,Europe/Brussels
 5002,Gent,51.0543,3.7174,BE,Europe/Brussels
