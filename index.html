@@ -740,7 +740,7 @@ function updateChart() {
     });
 
     const startDate  = new Date(CURRENT_YEAR, month - 1, day);
-    const endOfYear  = new Date(CURRENT_YEAR, 10, 31);
+    const endOfYear  = new Date(CURRENT_YEAR, 9, 31);
     const daysInSeason = Math.round((endOfYear - startDate) / 86400000) + 1;
     const trendLength  = Math.max(maxLen, daysInSeason);
 
