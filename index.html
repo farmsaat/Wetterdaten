@@ -421,30 +421,49 @@ function refreshResponsiveLayout() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TREND LINE — linear regression extended to `targetLength` points
-// Returns an array of length `targetLength` where:
-//   - indices 0…data.length-1 are null (not drawn over actual data)
-//   - indices data.length…targetLength-1 are the projected values
+// TREND LINE
+//
+// Strategy:
+//   1. Compute the average daily increment over the last `windowDays` days.
+//      This is the observed recent rate of change — more responsive than
+//      a full-history regression slope, which gets dragged down by the flat
+//      early-season period (when heat sum barely moves).
+//   2. Anchor the projection to the exact last real value so there is zero
+//      visual gap between the actual line and the trend line.
+//   3. Project forward using that per-day rate.
+//
+// Returns an array of length `targetLength`:
+//   - null for indices 0 … n-2  (covered by the actual data line)
+//   - actual last value at index n-1  (the join point)
+//   - projected values for indices n … targetLength-1
 // ─────────────────────────────────────────────────────────────────────────────
-function buildTrendLine(data, targetLength) {
+function buildTrendLine(data, targetLength, windowDays = 14) {
     const n = data.length;
     if (n < 2) return null;
 
-    // Compute linear regression (least squares) over existing data
+    // Use only the most recent `windowDays` points to estimate the slope,
+    // so the trend reflects current momentum rather than the full-season average.
+    const windowStart = Math.max(0, n - windowDays);
+    const recentData  = data.slice(windowStart);
+    const m           = recentData.length;
+
+    // Least-squares slope over the recent window
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < m; i++) {
         sumX  += i;
-        sumY  += data[i];
-        sumXY += i * data[i];
+        sumY  += recentData[i];
+        sumXY += i * recentData[i];
         sumX2 += i * i;
     }
-    const slope     = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
+    const slope = (m * sumXY - sumX * sumY) / (m * sumX2 - sumX * sumX);
 
-    // Fill array: null for existing data range, projected values beyond
+    // Anchor: the trend starts at the exact last real cumulative value
+    const lastValue = data[n - 1];
+
     const trend = new Array(targetLength).fill(null);
-    for (let i = n - 1; i < targetLength; i++) {
-        trend[i] = Math.max(0, slope * i + intercept);
+    // Include the join point so Chart.js draws a continuous line from the data
+    for (let i = 0; i < targetLength - (n - 1); i++) {
+        trend[n - 1 + i] = Math.max(0, lastValue + slope * i);
     }
     return trend;
 }
@@ -720,17 +739,11 @@ function updateChart() {
         maxLen = Math.max(maxLen, ws.length, rr.length);
     });
 
-    // ── How many days remain in the year from the sowing date ────────────────
-    // Use a non-leap year baseline (365 days) so the projection target is
-    // consistent; adjust to 366 for leap years if you prefer.
-    const startDate = new Date(CURRENT_YEAR, month - 1, day);
-    const endOfYear = new Date(CURRENT_YEAR, 11, 31);
+    const startDate  = new Date(CURRENT_YEAR, month - 1, day);
+    const endOfYear  = new Date(CURRENT_YEAR, 10, 31);
     const daysInSeason = Math.round((endOfYear - startDate) / 86400000) + 1;
+    const trendLength  = Math.max(maxLen, daysInSeason);
 
-    // The trend needs to reach at least as far as the longest other series
-    const trendLength = Math.max(maxLen, daysInSeason);
-
-    // Build labels covering the full projection window
     const labels = [];
     if (trendLength > 0) {
         const labelBase = new Date(2000, month - 1, day);
@@ -741,16 +754,13 @@ function updateChart() {
         }
     }
 
-    const waermeColors = ['#e73a1b', '#ffd632', '#83b624'];
-    const regenColors  = ['#e73a1b', '#ffd632', '#83b624'];
-
-    // Current-year colour (last in the array)
+    const waermeColors     = ['#e73a1b', '#ffd632', '#83b624'];
+    const regenColors      = ['#e73a1b', '#ffd632', '#83b624'];
     const currentYearColor = waermeColors[YEARS_TO_LOAD.length - 1];
 
     const datasets = [];
 
     YEARS_TO_LOAD.forEach((year, idx) => {
-        // ── Actual data lines ────────────────────────────────────────────────
         datasets.push({
             label:           `${year} Heat Sum`,
             data:            waermeSeries[year],
@@ -765,7 +775,6 @@ function updateChart() {
             borderDash:      [4, 4]
         });
 
-        // ── Trend lines — current year only ──────────────────────────────────
         if (year === CURRENT_YEAR) {
             const waermeTrend = buildTrendLine(waermeSeries[year], trendLength);
             const regenTrend  = buildTrendLine(regenSeries[year],  trendLength);
@@ -778,8 +787,6 @@ function updateChart() {
                     backgroundColor: 'transparent',
                     borderDash:      [6, 3],
                     borderWidth:     1.5,
-                    // Thinner, semi-transparent to distinguish from actual data
-                    borderAlpha:     0.6,
                     pointRadius:     0,
                     hoverRadius:     0,
                     tension:         0
@@ -792,7 +799,6 @@ function updateChart() {
                     data:            regenTrend,
                     borderColor:     currentYearColor,
                     backgroundColor: 'transparent',
-                    // Dots + dashes to differ from solid trend line above
                     borderDash:      [2, 4],
                     borderWidth:     1.5,
                     pointRadius:     0,
