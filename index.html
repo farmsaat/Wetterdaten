@@ -761,7 +761,7 @@ function updateChart() {
 
     // Trend lines run from last real data point to 31 October
     const startDate    = new Date(CURRENT_YEAR, month - 1, day);
-    const endOfSeason  = new Date(CURRENT_YEAR, 9, 31);   // 31.10.
+    const endOfSeason  = new Date(CURRENT_YEAR, 9, 31);  
     const daysInSeason = Math.round((endOfSeason - startDate) / 86400000) + 1;
     const trendLength  = Math.max(maxLen, daysInSeason);
 
