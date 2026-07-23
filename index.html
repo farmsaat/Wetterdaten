@@ -141,7 +141,7 @@
     }
 
     .loading { color: var(--brand-green); }
-    .error { color: #c0392b; }
+    .error   { color: #c0392b; }
 
     .panels { display: flex; flex-direction: column; gap: 16px; }
 
@@ -187,6 +187,15 @@
         overflow: hidden;
     }
 
+    /* ── Chart title (outside canvas, translatable) ── */
+    .chart-title {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+        color: var(--text);
+    }
+
     .chart-wrapper { width: 100%; height: 720px; }
 
     .year-chart {
@@ -197,6 +206,27 @@
         background-position: center;
         background-repeat: no-repeat;
     }
+
+    /* ── HTML legend (outside canvas, translatable & selectable) ── */
+    .chart-legend-html {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px 16px;
+        padding: 10px 0 4px;
+        font-size: 12px;
+        color: var(--text);
+    }
+
+    .chart-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: default;
+        user-select: text;
+    }
+
+    .chart-legend-line { flex-shrink: 0; }
 
     .download-button {
         display: inline-block;
@@ -266,6 +296,7 @@
         .main-view { padding: 12px; }
         .logo-header { max-width: 170px; }
         .chart-wrapper { height: 360px; }
+        .chart-title { font-size: 14px; }
     }
 
     @media (max-width: 768px) {
@@ -343,9 +374,11 @@
         <details class="collapsible-panel" id="chartPanel" open>
             <summary>Chart</summary>
             <div class="panel-body">
+                <p id="chartTitle" class="chart-title">Cumulative heat sum / precipitation in mm</p>
                 <div class="chart-wrapper">
                     <canvas id="yearChart" class="year-chart"></canvas>
                 </div>
+                <div id="chartLegend" class="chart-legend-html"></div>
                 <button class="download-button" onclick="downloadChart()">Download chart</button>
             </div>
         </details>
@@ -422,32 +455,17 @@ function refreshResponsiveLayout() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TREND LINE
-//
-// Strategy:
-//   1. Compute the average daily increment over the last `windowDays` days.
-//      This is the observed recent rate of change — more responsive than
-//      a full-history regression slope, which gets dragged down by the flat
-//      early-season period (when heat sum barely moves).
-//   2. Anchor the projection to the exact last real value so there is zero
-//      visual gap between the actual line and the trend line.
-//   3. Project forward using that per-day rate.
-//
-// Returns an array of length `targetLength`:
-//   - null for indices 0 … n-2  (covered by the actual data line)
-//   - actual last value at index n-1  (the join point)
-//   - projected values for indices n … targetLength-1
+// Anchors to the last real value and projects forward using the slope computed
+// over the most recent `windowDays` days, capped at the supplied `targetLength`.
 // ─────────────────────────────────────────────────────────────────────────────
 function buildTrendLine(data, targetLength, windowDays = 14) {
     const n = data.length;
     if (n < 2) return null;
 
-    // Use only the most recent `windowDays` points to estimate the slope,
-    // so the trend reflects current momentum rather than the full-season average.
     const windowStart = Math.max(0, n - windowDays);
     const recentData  = data.slice(windowStart);
     const m           = recentData.length;
 
-    // Least-squares slope over the recent window
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     for (let i = 0; i < m; i++) {
         sumX  += i;
@@ -457,11 +475,9 @@ function buildTrendLine(data, targetLength, windowDays = 14) {
     }
     const slope = (m * sumXY - sumX * sumY) / (m * sumX2 - sumX * sumX);
 
-    // Anchor: the trend starts at the exact last real cumulative value
     const lastValue = data[n - 1];
 
     const trend = new Array(targetLength).fill(null);
-    // Include the join point so Chart.js draws a continuous line from the data
     for (let i = 0; i < targetLength - (n - 1); i++) {
         trend[n - 1 + i] = Math.max(0, lastValue + slope * i);
     }
@@ -477,17 +493,16 @@ async function loadLocationsFromRepo() {
         if (!response.ok) throw new Error('locations.csv not found');
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
-        const rows = lines.slice(1);
 
-        locations = rows
+        locations = lines.slice(1)
             .filter(line => line.trim() !== '')
             .map(line => {
                 const cols = line.split(',');
                 return {
-                    id: cols[0].trim(),
-                    name: cols[1].trim(),
-                    lat: parseFloat(cols[2]),
-                    lon: parseFloat(cols[3]),
+                    id:      cols[0].trim(),
+                    name:    cols[1].trim(),
+                    lat:     parseFloat(cols[2]),
+                    lon:     parseFloat(cols[3]),
                     country: (cols[4] || '').trim().toUpperCase()
                 };
             });
@@ -503,14 +518,14 @@ function populateLocationSelect() {
     const select = document.getElementById('locationSelect');
     select.innerHTML = '';
 
-    const sorted = [...locations].sort((a, b) => a.name.localeCompare(b.name));
-
-    sorted.forEach(loc => {
-        const option = document.createElement('option');
-        option.value = loc.id;
-        option.textContent = `${loc.name} (${loc.id})`;
-        select.appendChild(option);
-    });
+    [...locations]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(loc => {
+            const option = document.createElement('option');
+            option.value = loc.id;
+            option.textContent = `${loc.name} (${loc.id})`;
+            select.appendChild(option);
+        });
 
     const initialId = locations.some(l => l.id === DEFAULT_LOCATION_ID)
         ? DEFAULT_LOCATION_ID
@@ -546,18 +561,14 @@ function computeDailyMetrics(locationId, year) {
     return daily.time.map((dateStr, i) => {
         const tmax = daily.temperature_2m_max[i] ?? 0;
         const tmin = daily.temperature_2m_min[i] ?? 0;
-        const prec = daily.precipitation_sum[i] ?? 0;
+        const prec = daily.precipitation_sum[i]  ?? 0;
 
-        const cappedMax = Math.min(tmax, 30);
-        const avg = (cappedMax + tmin) / 2;
-        const temp = avg - 6;
-        const waermesumme = temp > 6 ? temp : 0;
+        const cappedMax    = Math.min(tmax, 30);
+        const avg          = (cappedMax + tmin) / 2;
+        const temp         = avg - 6;
+        const waermesumme  = temp > 6 ? temp : 0;
 
-        return {
-            Zeitstempel: dateStr,
-            Waermesumme: waermesumme,
-            Niederschlag: prec
-        };
+        return { Zeitstempel: dateStr, Waermesumme: waermesumme, Niederschlag: prec };
     });
 }
 
@@ -574,10 +585,7 @@ function buildCumulativeSeries(locationId, year, metricKey) {
         .sort((a, b) => a.Zeitstempel.localeCompare(b.Zeitstempel));
 
     let sum = 0;
-    return rows.map(r => {
-        sum += r[metricKey];
-        return sum;
-    });
+    return rows.map(r => { sum += r[metricKey]; return sum; });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -612,18 +620,15 @@ function initializeMap() {
     renderLocationMarkers();
     updateMapLegendVisibility();
 
-    setTimeout(() => {
-        map.invalidateSize();
-        updateMapLegendVisibility();
-    }, 150);
+    setTimeout(() => { map.invalidateSize(); updateMapLegendVisibility(); }, 150);
 }
 
 function renderLocationMarkers() {
     markersLayer.clearLayers();
 
     locations.forEach(loc => {
-        const fill   = getMarkerColor(loc.country);
-        const stroke = darkenHex(fill, 0.30);
+        const fill       = getMarkerColor(loc.country);
+        const stroke     = darkenHex(fill, 0.30);
         const isSelected = loc.id === selectedLocationId;
 
         const marker = L.circleMarker([loc.lat, loc.lon], {
@@ -677,6 +682,31 @@ function updateMapLegendVisibility() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// HTML LEGEND
+// Renders chart legend as real DOM elements so the browser translator can
+// detect and translate label text, and users can select/copy it.
+// ─────────────────────────────────────────────────────────────────────────────
+function updateHtmlLegend() {
+    const container = document.getElementById('chartLegend');
+    if (!container || !yearChart) return;
+
+    const lineW = isMobileView() ? 24 : 32;
+    const lineH = 12;
+    const lineY = lineH / 2;
+
+    container.innerHTML = yearChart.data.datasets.map(ds => {
+        const color      = ds.borderColor || '#999';
+        const dashes     = ds.borderDash  || [];
+        const dashAttr   = dashes.length ? `stroke-dasharray="${dashes.join(',')}"` : '';
+        const svg = `<svg class="chart-legend-line" width="${lineW}" height="${lineH}" aria-hidden="true">
+            <line x1="0" y1="${lineY}" x2="${lineW}" y2="${lineY}"
+                stroke="${color}" stroke-width="2" ${dashAttr}/>
+        </svg>`;
+        return `<span class="chart-legend-item">${svg}${ds.label}</span>`;
+    }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CHART
 // ─────────────────────────────────────────────────────────────────────────────
 function initializeChart() {
@@ -700,18 +730,8 @@ function initializeChart() {
                 }
             },
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: isMobileView() ? 12 : 18,
-                        font: { size: isMobileView() ? 11 : 12 }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: 'Cumulative heat sum / precipitation in mm',
-                    font: { size: isMobileView() ? 14 : 16 }
-                }
+                legend: { display: false },   // replaced by HTML legend below chart
+                title:  { display: false }    // replaced by .chart-title element above chart
             },
             elements: {
                 point: { radius: 0, hoverRadius: 0 },
@@ -739,9 +759,10 @@ function updateChart() {
         maxLen = Math.max(maxLen, ws.length, rr.length);
     });
 
-    const startDate  = new Date(CURRENT_YEAR, month - 1, day);
-    const endOfYear  = new Date(CURRENT_YEAR, 9, 31);
-    const daysInSeason = Math.round((endOfYear - startDate) / 86400000) + 1;
+    // Trend lines run from last real data point to 31 October
+    const startDate    = new Date(CURRENT_YEAR, month - 1, day);
+    const endOfSeason  = new Date(CURRENT_YEAR, 9, 31);   // 31.10.
+    const daysInSeason = Math.round((endOfSeason - startDate) / 86400000) + 1;
     const trendLength  = Math.max(maxLen, daysInSeason);
 
     const labels = [];
@@ -812,6 +833,7 @@ function updateChart() {
     yearChart.data.labels   = labels;
     yearChart.data.datasets = datasets;
     yearChart.update();
+    updateHtmlLegend();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -846,19 +868,19 @@ async function selectLocation(locationId, options = {}) {
 // DOWNLOAD
 // ─────────────────────────────────────────────────────────────────────────────
 function downloadChart() {
-    const canvas = document.getElementById('yearChart');
-    const attributionText  = 'Weather data by Open-Meteo.com · Licensed under CC BY 4.0';
+    const canvas            = document.getElementById('yearChart');
+    const attributionText   = 'Weather data by Open-Meteo.com · Licensed under CC BY 4.0';
     const attributionHeight = 30;
 
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width  = canvas.width;
-    newCanvas.height = canvas.height + attributionHeight;
-    const ctx = newCanvas.getContext('2d');
+    const newCanvas    = document.createElement('canvas');
+    newCanvas.width    = canvas.width;
+    newCanvas.height   = canvas.height + attributionHeight;
+    const ctx          = newCanvas.getContext('2d');
 
     const bgImg   = new Image();
     const logoImg = new Image();
-    bgImg.src   = 'background.png';
-    logoImg.src = 'logo.png';
+    bgImg.src     = 'background.png';
+    logoImg.src   = 'logo.png';
 
     let loadedCount = 0;
     const checkLoaded = () => {
@@ -887,7 +909,7 @@ function downloadChart() {
         }
     };
 
-    bgImg.onload  = checkLoaded;
+    bgImg.onload   = checkLoaded;
     logoImg.onload = checkLoaded;
 }
 
@@ -949,7 +971,7 @@ function hookFilterInputs() {
 
     document.getElementById('chartPanel').addEventListener('toggle', () => {
         if (document.getElementById('chartPanel').open && yearChart) {
-            setTimeout(() => yearChart.resize(), 150);
+            setTimeout(() => { yearChart.resize(); updateHtmlLegend(); }, 150);
             setActiveTab('chartPanel');
         }
     });
