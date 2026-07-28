@@ -709,6 +709,11 @@ function updateHtmlLegend() {
 // ─────────────────────────────────────────────────────────────────────────────
 // CHART
 // ─────────────────────────────────────────────────────────────────────────────
+// Register a custom tooltip positioner that sticks to the mouse cursor
+Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
+    return coordinates;
+};
+
 function initializeChart() {
     const ctx = document.getElementById('yearChart').getContext('2d');
 
@@ -731,7 +736,8 @@ function initializeChart() {
             },
             plugins: {
                 legend: { display: false },   // replaced by HTML legend below chart
-                title:  { display: false }    // replaced by .chart-title element above chart
+                title:  { display: false },   // replaced by .chart-title element above chart
+                tooltip: { position: 'cursor'}
             },
             elements: {
                 point: { radius: 0, hoverRadius: 0 },
