@@ -737,7 +737,17 @@ function initializeChart() {
             plugins: {
                 legend: { display: false },   // replaced by HTML legend below chart
                 title:  { display: false },   // replaced by .chart-title element above chart
-                tooltip: { position: 'cursor'}
+                tooltip: {
+                    position: 'cursor',
+                    callbacks: {
+                        labelColor: function(context) {
+                            return {
+                                borderColor: context.dataset.borderColor,
+                                backgroundColor: context.dataset.borderColor
+                            };
+                        }
+                    }
+                }
             },
             elements: {
                 point: { radius: 0, hoverRadius: 0 },
