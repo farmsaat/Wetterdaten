@@ -709,10 +709,6 @@ function updateHtmlLegend() {
 // ─────────────────────────────────────────────────────────────────────────────
 // CHART
 // ─────────────────────────────────────────────────────────────────────────────
-// Register a custom tooltip positioner that sticks to the mouse cursor
-Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
-    return coordinates;
-};
 
 function initializeChart() {
     const ctx = document.getElementById('yearChart').getContext('2d');
@@ -739,7 +735,14 @@ function initializeChart() {
                 title:  { display: false },   // replaced by .chart-title element above chart
                 tooltip: {
                     position: 'nearest',
-                    usePointStyle: true
+                    callbacks: {
+                        labelColor: function(context) {
+                            return {
+                                borderColor: context.dataset.borderColor,
+                                backgroundColor: context.dataset.borderColor
+                            };
+                        }
+                    }
                 }
             },
             elements: {
