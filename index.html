@@ -267,6 +267,56 @@
         border-color: var(--brand-green);
     }
 
+    /* ── Grain / Silage toggle switch ── */
+    .fao-mode-switch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .fao-mode-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+        transition: color 0.2s;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .fao-mode-label.active {
+        color: var(--brand-green-dark);
+    }
+
+    .toggle-track {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        background: var(--brand-green);
+        border-radius: 13px;
+        cursor: pointer;
+        transition: background 0.2s;
+        flex-shrink: 0;
+    }
+
+    .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle-track.silage::after {
+        transform: translateX(22px);
+    }
+
     .download-button {
         display: inline-block;
         margin: 14px 0 0;
@@ -431,6 +481,13 @@
             <summary>FAO</summary>
             <div class="panel-body">
                 <p class="panel-hint">Select an FAO maturity group to display its heat sum requirement as a horizontal line on the chart.</p>
+
+                <div class="fao-mode-switch">
+                    <span class="fao-mode-label active" id="labelGrain">Grain</span>
+                    <div class="toggle-track" id="faoModeToggle" role="switch" aria-checked="false" tabindex="0"></div>
+                    <span class="fao-mode-label" id="labelSilage">Silage</span>
+                </div>
+
                 <div class="fao-radio-group" id="faoRadioGroup">
                     <label class="fao-radio-label selected">
                         <input type="radio" name="fao" value="none" checked>
@@ -495,15 +552,26 @@ const COUNTRY_COLORS = {
 };
 const DEFAULT_MARKER_COLOR = '#607d8b';
 
-// FAO maturity group → required cumulative heat sum (y-value)
+// FAO maturity group → required cumulative heat sum (y-value) per mode
 const FAO_VALUES = {
-    'none':    null,
-    '160-180': 1450,
-    '190-210': 1575,
-    '220-240': 1625,
-    '250-270': 1730,
-    '280-300': 1780,
-    '310-330': 1810
+    grain: {
+        'none':    null,
+        '160-180': 1460,
+        '190-210': 1580,
+        '220-240': 1635,
+        '250-270': 1740,
+        '280-300': 1795,
+        '310-330': 1825
+    },
+    silage: {
+        'none':    null,
+        '160-180': 1245,
+        '190-210': 1330,
+        '220-240': 1425,
+        '250-270': 1460,
+        '280-300': 1555,
+        '310-330': 1675
+    }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -513,6 +581,7 @@ const weatherData = {};
 let locations = [];
 let map, markersLayer, mapLegendControl = null, selectedLocationId = null, yearChart = null;
 let activeFao = 'none';
+let faoMode = 'grain';   // 'grain' or 'silage'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -802,16 +871,21 @@ function updateHtmlLegend() {
 // ─────────────────────────────────────────────────────────────────────────────
 // FAO HORIZONTAL LINE
 // ─────────────────────────────────────────────────────────────────────────────
+function getActiveFaoValue() {
+    return FAO_VALUES[faoMode][activeFao] ?? null;
+}
+
 function updateFaoLine() {
     if (!yearChart) return;
 
     // Remove any existing FAO dataset
     yearChart.data.datasets = yearChart.data.datasets.filter(ds => !ds._isFaoLine);
 
-    const yValue = FAO_VALUES[activeFao];
+    const yValue = getActiveFaoValue();
     if (yValue !== null && yearChart.data.labels.length > 0) {
+        const modeLabel = faoMode.charAt(0).toUpperCase() + faoMode.slice(1);
         const faoDataset = {
-            label:           `FAO ${activeFao.replace('-', ' – ')} (${yValue})`,
+            label:           `FAO ${activeFao.replace('-', ' – ')} ${modeLabel} (${yValue})`,
             data:            new Array(yearChart.data.labels.length).fill(yValue),
             borderColor:     '#8B008B',
             backgroundColor: 'transparent',
@@ -820,7 +894,7 @@ function updateFaoLine() {
             pointRadius:     0,
             hoverRadius:     0,
             tension:         0,
-            _isFaoLine:      true   // internal flag for identification
+            _isFaoLine:      true
         };
         yearChart.data.datasets.push(faoDataset);
     }
@@ -854,8 +928,8 @@ function initializeChart() {
                 }
             },
             plugins: {
-                legend: { display: false },   // replaced by HTML legend below chart
-                title:  { display: false },   // replaced by .chart-title element above chart
+                legend: { display: false },
+                title:  { display: false },
                 tooltip: {
                     position: 'nearest',
                     callbacks: {
@@ -894,9 +968,8 @@ function updateChart() {
         maxLen = Math.max(maxLen, ws.length, rr.length);
     });
 
-    // Trend lines run from last real data point to 31 October
     const startDate    = new Date(CURRENT_YEAR, month - 1, day);
-    const endOfSeason  = new Date(CURRENT_YEAR, 9, 31);  
+    const endOfSeason  = new Date(CURRENT_YEAR, 9, 31);
     const daysInSeason = Math.round((endOfSeason - startDate) / 86400000) + 1;
     const trendLength  = Math.max(maxLen, daysInSeason);
 
@@ -969,10 +1042,11 @@ function updateChart() {
     yearChart.data.datasets = datasets;
 
     // Re-apply FAO line if active
-    const yValue = FAO_VALUES[activeFao];
+    const yValue = getActiveFaoValue();
     if (yValue !== null && labels.length > 0) {
+        const modeLabel = faoMode.charAt(0).toUpperCase() + faoMode.slice(1);
         yearChart.data.datasets.push({
-            label:           `FAO ${activeFao.replace('-', ' – ')} (${yValue})`,
+            label:           `FAO ${activeFao.replace('-', ' – ')} ${modeLabel} (${yValue})`,
             data:            new Array(labels.length).fill(yValue),
             borderColor:     '#8B008B',
             backgroundColor: 'transparent',
@@ -1115,13 +1189,41 @@ function hookFilterInputs() {
     document.querySelectorAll('#faoRadioGroup input[name="fao"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             activeFao = e.target.value;
-            // Update visual selection state
             document.querySelectorAll('.fao-radio-label').forEach(lbl => lbl.classList.remove('selected'));
             e.target.closest('.fao-radio-label').classList.add('selected');
             updateFaoLine();
         });
     });
 
+    // FAO mode toggle (grain / silage)
+    const toggle = document.getElementById('faoModeToggle');
+    const labelGrain  = document.getElementById('labelGrain');
+    const labelSilage = document.getElementById('labelSilage');
+
+    function setFaoMode(mode) {
+        faoMode = mode;
+        toggle.classList.toggle('silage', mode === 'silage');
+        toggle.setAttribute('aria-checked', mode === 'silage' ? 'true' : 'false');
+        labelGrain.classList.toggle('active', mode === 'grain');
+        labelSilage.classList.toggle('active', mode === 'silage');
+        updateFaoLine();
+    }
+
+    toggle.addEventListener('click', () => {
+        setFaoMode(faoMode === 'grain' ? 'silage' : 'grain');
+    });
+
+    toggle.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            setFaoMode(faoMode === 'grain' ? 'silage' : 'grain');
+        }
+    });
+
+    labelGrain.addEventListener('click', () => setFaoMode('grain'));
+    labelSilage.addEventListener('click', () => setFaoMode('silage'));
+
+    // Tab buttons
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => openPanelAndScroll(btn.dataset.target));
     });
