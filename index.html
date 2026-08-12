@@ -110,7 +110,7 @@
 
     .mobile-tabs {
         display: none;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
         margin-top: 12px;
     }
@@ -228,6 +228,44 @@
 
     .chart-legend-line { flex-shrink: 0; }
 
+    /* ── FAO radio group ── */
+    .fao-radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 20px;
+    }
+
+    .fao-radio-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #444;
+        cursor: pointer;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .fao-radio-label:hover {
+        background: var(--surface-soft);
+        border-color: var(--brand-green);
+    }
+
+    .fao-radio-label input[type="radio"] {
+        accent-color: var(--brand-green);
+        width: 16px;
+        height: 16px;
+        margin: 0;
+    }
+
+    .fao-radio-label.selected {
+        background: rgba(122, 183, 62, 0.08);
+        border-color: var(--brand-green);
+    }
+
     .download-button {
         display: inline-block;
         margin: 14px 0 0;
@@ -311,6 +349,8 @@
         .leaflet-control-geocoder { max-width: calc(100vw - 36px); }
         .leaflet-control-geocoder-form input { width: 170px; }
         .map-legend { font-size: 12px; line-height: 18px; padding: 6px 8px; }
+        .fao-radio-group { gap: 8px 12px; }
+        .fao-radio-label { font-size: 13px; padding: 5px 8px; }
     }
 
     @media (max-width: 420px) {
@@ -320,6 +360,8 @@
         .sowing-input { width: 76px; }
         .chart-wrapper { height: 270px; }
         .attribution { font-size: 11px; line-height: 1.4; }
+        .fao-radio-group { gap: 6px 10px; }
+        .fao-radio-label { font-size: 12px; padding: 4px 6px; }
     }
 </style>
 </head>
@@ -357,6 +399,7 @@
         <div class="mobile-tabs">
             <button class="tab-button" data-target="mapPanel">Map</button>
             <button class="tab-button" data-target="chartPanel">Chart</button>
+            <button class="tab-button" data-target="faoPanel">FAO</button>
         </div>
     </div>
 
@@ -380,6 +423,43 @@
                 </div>
                 <div id="chartLegend" class="chart-legend-html"></div>
                 <button class="download-button" onclick="downloadChart()">Download chart</button>
+            </div>
+        </details>
+
+        <details class="collapsible-panel" id="faoPanel" open>
+            <summary>FAO</summary>
+            <div class="panel-body">
+                <p class="panel-hint">Select an FAO maturity group to display its heat sum requirement as a horizontal line on the chart.</p>
+                <div class="fao-radio-group" id="faoRadioGroup">
+                    <label class="fao-radio-label selected">
+                        <input type="radio" name="fao" value="none" checked>
+                        None
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="160-180">
+                        160 – 180
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="190-210">
+                        190 – 210
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="220-240">
+                        220 – 240
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="250-270">
+                        250 – 270
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="280-300">
+                        280 – 300
+                    </label>
+                    <label class="fao-radio-label">
+                        <input type="radio" name="fao" value="310-330">
+                        310 – 330
+                    </label>
+                </div>
             </div>
         </details>
     </div>
@@ -414,12 +494,24 @@ const COUNTRY_COLORS = {
 };
 const DEFAULT_MARKER_COLOR = '#607d8b';
 
+// FAO maturity group → required cumulative heat sum (y-value)
+const FAO_VALUES = {
+    'none':    null,
+    '160-180': 1400,
+    '190-210': 1500,
+    '220-240': 1600,
+    '250-270': 1700,
+    '280-300': 1800,
+    '310-330': 1900
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────────────────────────────────
 const weatherData = {};
 let locations = [];
 let map, markersLayer, mapLegendControl = null, selectedLocationId = null, yearChart = null;
+let activeFao = 'none';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -707,6 +799,36 @@ function updateHtmlLegend() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FAO HORIZONTAL LINE
+// ─────────────────────────────────────────────────────────────────────────────
+function updateFaoLine() {
+    if (!yearChart) return;
+
+    // Remove any existing FAO dataset
+    yearChart.data.datasets = yearChart.data.datasets.filter(ds => !ds._isFaoLine);
+
+    const yValue = FAO_VALUES[activeFao];
+    if (yValue !== null && yearChart.data.labels.length > 0) {
+        const faoDataset = {
+            label:           `FAO ${activeFao.replace('-', ' – ')} (${yValue})`,
+            data:            new Array(yearChart.data.labels.length).fill(yValue),
+            borderColor:     '#8B008B',
+            backgroundColor: 'transparent',
+            borderDash:      [10, 5],
+            borderWidth:     2,
+            pointRadius:     0,
+            hoverRadius:     0,
+            tension:         0,
+            _isFaoLine:      true   // internal flag for identification
+        };
+        yearChart.data.datasets.push(faoDataset);
+    }
+
+    yearChart.update();
+    updateHtmlLegend();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CHART
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -844,6 +966,24 @@ function updateChart() {
 
     yearChart.data.labels   = labels;
     yearChart.data.datasets = datasets;
+
+    // Re-apply FAO line if active
+    const yValue = FAO_VALUES[activeFao];
+    if (yValue !== null && labels.length > 0) {
+        yearChart.data.datasets.push({
+            label:           `FAO ${activeFao.replace('-', ' – ')} (${yValue})`,
+            data:            new Array(labels.length).fill(yValue),
+            borderColor:     '#8B008B',
+            backgroundColor: 'transparent',
+            borderDash:      [10, 5],
+            borderWidth:     2,
+            pointRadius:     0,
+            hoverRadius:     0,
+            tension:         0,
+            _isFaoLine:      true
+        });
+    }
+
     yearChart.update();
     updateHtmlLegend();
 }
@@ -970,6 +1110,17 @@ function hookFilterInputs() {
         await selectLocation(e.target.value, { flyTo: true });
     });
 
+    // FAO radio buttons
+    document.querySelectorAll('#faoRadioGroup input[name="fao"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            activeFao = e.target.value;
+            // Update visual selection state
+            document.querySelectorAll('.fao-radio-label').forEach(lbl => lbl.classList.remove('selected'));
+            e.target.closest('.fao-radio-label').classList.add('selected');
+            updateFaoLine();
+        });
+    });
+
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => openPanelAndScroll(btn.dataset.target));
     });
@@ -985,6 +1136,12 @@ function hookFilterInputs() {
         if (document.getElementById('chartPanel').open && yearChart) {
             setTimeout(() => { yearChart.resize(); updateHtmlLegend(); }, 150);
             setActiveTab('chartPanel');
+        }
+    });
+
+    document.getElementById('faoPanel').addEventListener('toggle', () => {
+        if (document.getElementById('faoPanel').open) {
+            setActiveTab('faoPanel');
         }
     });
 
@@ -1021,6 +1178,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     if (isMobileView()) {
         document.getElementById('chartPanel').open = false;
+        document.getElementById('faoPanel').open   = false;
         document.getElementById('mapPanel').open   = true;
         setActiveTab('filtersPanel');
     }
