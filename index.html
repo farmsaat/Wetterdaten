@@ -1202,7 +1202,7 @@ function hookFilterInputs() {
 
     function setFaoMode(mode) {
         faoMode = mode;
-        toggle.classList.toggle('silage', mode === 'silage');
+        toggle.classList.toggle('grain', mode === 'grain');
         toggle.setAttribute('aria-checked', mode === 'grain' ? 'true' : 'false');
         labelGrain.classList.toggle('active', mode === 'grain');
         labelSilage.classList.toggle('active', mode === 'silage');
