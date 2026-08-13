@@ -483,9 +483,9 @@
                 <p class="panel-hint">Select an FAO maturity group to display its heat sum requirement as a horizontal line on the chart.</p>
 
                 <div class="fao-mode-switch">
-                    <span class="fao-mode-label active" id="labelGrain">Grain</span>
+                    <span class="fao-mode-label active" id="labelSilage">Silage</span>
                     <div class="toggle-track" id="faoModeToggle" role="switch" aria-checked="false" tabindex="0"></div>
-                    <span class="fao-mode-label" id="labelSilage">Silage</span>
+                    <span class="fao-mode-label" id="labelGrain">Grain</span>
                 </div>
 
                 <div class="fao-radio-group" id="faoRadioGroup">
@@ -581,7 +581,7 @@ const weatherData = {};
 let locations = [];
 let map, markersLayer, mapLegendControl = null, selectedLocationId = null, yearChart = null;
 let activeFao = 'none';
-let faoMode = 'grain';   // 'grain' or 'silage'
+let faoMode = 'silage';   // 'grain' or 'silage'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -1203,7 +1203,7 @@ function hookFilterInputs() {
     function setFaoMode(mode) {
         faoMode = mode;
         toggle.classList.toggle('silage', mode === 'silage');
-        toggle.setAttribute('aria-checked', mode === 'silage' ? 'true' : 'false');
+        toggle.setAttribute('aria-checked', mode === 'grain' ? 'true' : 'false');
         labelGrain.classList.toggle('active', mode === 'grain');
         labelSilage.classList.toggle('active', mode === 'silage');
         updateFaoLine();
