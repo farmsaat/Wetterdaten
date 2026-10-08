@@ -214,6 +214,8 @@ id,name,lat,lon,country,timezone
 1213,Weissenburg,49.03305, 10.97194,DE,Europe/Berlin
 1214,Donauworth,48.71858, 10.7778,DE,Europe/Berlin
 1215,Verden,52.9233,9.2326,DE,Europe/Berlin
+1216,Borken,51.8438,6.8577,DE,Europe/Berlin
+1217,Borken,51.045,9.2844,DE,Europe/Berlin
 2001,Warsaw,52.237,21.0175,PL,Europe/Warsaw
 2002,Krakow,50.0647,19.945,PL,Europe/Warsaw
 2003,Łódź,51.7595,19.456,PL,Europe/Warsaw
