@@ -1202,9 +1202,9 @@ async function downloadChart() {
         const logoWidth = 210 * scale;
         const logoHeight = 40 * scale;
 
-        ctx.drawImage(
+       ctx.drawImage(
             logoImg,
-            newCanvas.width - logoWidth - 20 * scale,
+            (newCanvas.width - logoWidth) / 2,
             20 * scale,
             logoWidth,
             logoHeight
