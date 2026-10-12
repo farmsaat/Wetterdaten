@@ -1094,50 +1094,207 @@ async function selectLocation(locationId, options = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 // DOWNLOAD
 // ─────────────────────────────────────────────────────────────────────────────
-function downloadChart() {
-    const canvas            = document.getElementById('yearChart');
-    const attributionText   = 'Weather data by Open-Meteo.com · Licensed under CC BY 4.0';
-    const attributionHeight = 30;
+async function downloadChart() {
+    const canvas = document.getElementById('yearChart');
+    if (!canvas || !yearChart) return;
 
-    const newCanvas    = document.createElement('canvas');
-    newCanvas.width    = canvas.width;
-    newCanvas.height   = canvas.height + attributionHeight;
-    const ctx          = newCanvas.getContext('2d');
+    const legendItems = Array.from(
+        document.querySelectorAll('#chartLegend .chart-legend-item')
+    );
 
-    const bgImg   = new Image();
-    const logoImg = new Image();
-    bgImg.src     = 'background.png';
-    logoImg.src   = 'logo.png';
+    const attributionText =
+        'Weather data by Open-Meteo.com · Licensed under CC BY 4.0';
 
-    let loadedCount = 0;
-    const checkLoaded = () => {
-        loadedCount++;
-        if (loadedCount === 2) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
-            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-            ctx.drawImage(canvas, 0, 0);
+    const chartRect = canvas.getBoundingClientRect();
 
-            const logoWidth  = 210;
-            const logoHeight = 40;
-            ctx.drawImage(logoImg, newCanvas.width - logoWidth - 20, 20, logoWidth, logoHeight);
+    // Scale export text and spacing consistently with the chart's pixel ratio.
+    const scale = canvas.width / chartRect.width;
 
-            ctx.fillStyle    = '#888888';
-            ctx.font         = '11px Arial, sans-serif';
-            ctx.textAlign    = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(attributionText, newCanvas.width / 2, canvas.height + attributionHeight / 2);
+    const padding = 16 * scale;
+    const legendLineHeight = 24 * scale;
+    const legendTopPadding = 12 * scale;
+    const legendBottomPadding = 8 * scale;
+    const attributionHeight = 30 * scale;
 
-            const link     = document.createElement('a');
-            const location = getLocationById(selectedLocationId);
-            link.download  = `farmsaat_WeatherData_${location ? location.name : 'unknown'}.jpg`;
-            link.href      = newCanvas.toDataURL('image/jpeg', 1.0);
-            link.click();
+    const legendFontSize = 12 * scale;
+    const attributionFontSize = 11 * scale;
+
+    /*
+     * Calculate the number of legend rows using the translated HTML legend
+     * text currently visible in the browser.
+     */
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+
+    measureCtx.font =
+        `${legendFontSize}px Arial, sans-serif`;
+
+    const legendGap = 16 * scale;
+    const swatchWidth = (window.innerWidth <= 768 ? 24 : 32) * scale;
+    const swatchGap = 6 * scale;
+    const itemHorizontalWidth = swatchWidth + swatchGap;
+
+    let currentRowWidth = 0;
+    let legendRows = legendItems.length ? 1 : 0;
+
+    legendItems.forEach(item => {
+        const text = item.textContent.trim();
+        const itemWidth =
+            itemHorizontalWidth +
+            measureCtx.measureText(text).width;
+
+        if (
+            currentRowWidth > 0 &&
+            currentRowWidth + itemWidth + legendGap > canvas.width - padding * 2
+        ) {
+            legendRows++;
+            currentRowWidth = itemWidth;
+        } else {
+            currentRowWidth += itemWidth + legendGap;
         }
-    };
+    });
 
-    bgImg.onload   = checkLoaded;
-    logoImg.onload = checkLoaded;
+    const legendHeight = legendRows
+        ? legendTopPadding +
+          legendRows * legendLineHeight +
+          legendBottomPadding
+        : 0;
+
+    const newCanvas = document.createElement('canvas');
+    newCanvas.width = canvas.width;
+    newCanvas.height =
+        canvas.height +
+        legendHeight +
+        attributionHeight;
+
+    const ctx = newCanvas.getContext('2d');
+
+    // White export background.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+    // Draw the chart itself, including its background image.
+    const bgImg = new Image();
+    const logoImg = new Image();
+
+    const loadImage = (img, src) => new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = src;
+    });
+
+    try {
+        await Promise.all([
+            loadImage(bgImg, 'background.png'),
+            loadImage(logoImg, 'logo.png')
+        ]);
+    } catch (error) {
+        console.warn('Could not load chart export images.', error);
+    }
+
+    if (bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.drawImage(canvas, 0, 0);
+
+    if (logoImg.complete && logoImg.naturalWidth > 0) {
+        const logoWidth = 210 * scale;
+        const logoHeight = 40 * scale;
+
+        ctx.drawImage(
+            logoImg,
+            newCanvas.width - logoWidth - 20 * scale,
+            20 * scale,
+            logoWidth,
+            logoHeight
+        );
+    }
+
+    /*
+     * Draw the HTML legend into the exported image.
+     * The label is read from the DOM, meaning browser-translated text
+     * is also used in the downloaded image.
+     */
+    if (legendItems.length) {
+        ctx.save();
+
+        ctx.font = `${legendFontSize}px Arial, sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#222222';
+
+        let x = padding;
+        let y = canvas.height + legendTopPadding + legendLineHeight / 2;
+        let rowWidth = 0;
+
+        legendItems.forEach((item, index) => {
+            const dataset = yearChart.data.datasets[index];
+            const text = item.textContent.trim();
+
+            const itemWidth =
+                itemHorizontalWidth +
+                ctx.measureText(text).width;
+
+            if (
+                rowWidth > 0 &&
+                rowWidth + itemWidth + legendGap > newCanvas.width - padding * 2
+            ) {
+                rowWidth = 0;
+                x = padding;
+                y += legendLineHeight;
+            }
+
+            const lineY = y;
+
+            ctx.save();
+            ctx.strokeStyle = dataset?.borderColor || '#999999';
+            ctx.lineWidth = 2 * scale;
+            ctx.setLineDash(
+                Array.isArray(dataset?.borderDash)
+                    ? dataset.borderDash.map(value => value * scale)
+                    : []
+            );
+
+            ctx.beginPath();
+            ctx.moveTo(x, lineY);
+            ctx.lineTo(x + swatchWidth, lineY);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#222222';
+            ctx.fillText(
+                text,
+                x + swatchWidth + swatchGap,
+                lineY
+            );
+
+            x += itemWidth + legendGap;
+            rowWidth += itemWidth + legendGap;
+        });
+
+        ctx.restore();
+    }
+
+    // Attribution below the legend.
+    ctx.fillStyle = '#888888';
+    ctx.font = `${attributionFontSize}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillText(
+        attributionText,
+        newCanvas.width / 2,
+        canvas.height + legendHeight + attributionHeight / 2
+    );
+
+    const location = getLocationById(selectedLocationId);
+    const filename =
+        `farmsaat_WeatherData_${location ? location.name : 'unknown'}.jpg`;
+
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = newCanvas.toDataURL('image/jpeg', 1.0);
+    link.click();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
