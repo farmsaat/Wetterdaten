@@ -540,6 +540,9 @@ id,name,lat,lon,country,timezone
 3153,Vendôme,47.7929,1.0656,FR,Europe/Paris
 3154,Châteaudun,48.0709,1.3378,FR,Europe/Paris
 3155,Hasparren,43.3839,-1.3052,FR,Europe/Paris
+3156,Lispothey,44.3169,-0.8794,FR,Europe/Paris
+3157,Solférino,44.1454,-0.9184,FR,Europe/Paris
+3158,Hastingues,43.5343,-1.1493,FR,Europe/Paris
 4001,Arnhem,51.9851,5.8987,NL,Europe/Amsterdam
 4002,Apeldoorn,52.2112,5.9699,NL,Europe/Amsterdam
 4003,Zwolle,52.5168,6.083,NL,Europe/Amsterdam
