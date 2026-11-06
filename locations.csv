@@ -550,7 +550,7 @@ id,name,lat,lon,country,timezone
 3163,Bignan,47.8789,-2.7743,FR,Europe/Paris
 3164,Bain-de-Bretagne,47.8469,-1.6858,FR,Europe/Paris
 3165,Ozenx-Montestrucq,43.45,-0.7833,FR,Europe/Paris
-3166,La Ferté-Bernard,48.1872,0,6525,FR,Europe/Paris
+3166,La Ferté-Bernard,48.1872,0.6525,FR,Europe/Paris
 4001,Arnhem,51.9851,5.8987,NL,Europe/Amsterdam
 4002,Apeldoorn,52.2112,5.9699,NL,Europe/Amsterdam
 4003,Zwolle,52.5168,6.083,NL,Europe/Amsterdam
